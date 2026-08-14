@@ -174,6 +174,10 @@ a {
     text-align: center;
     min-height: calc(100vh - 80px);
     padding: 0 5%;
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(42, 0, 6, 0.8)), url('/hero-bg.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .hero-content {
