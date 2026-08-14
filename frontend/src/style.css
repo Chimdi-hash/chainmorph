@@ -64,7 +64,7 @@ a {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 5%;
+    padding: 0.8rem 5%;
     background: rgba(42, 0, 6, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--glass-border);
@@ -74,7 +74,7 @@ a {
 }
 
 .logo {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 800;
     letter-spacing: -0.5px;
 }
