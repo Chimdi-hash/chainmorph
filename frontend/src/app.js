@@ -260,7 +260,7 @@ async function initStudyPage() {
         });
     }
 
-    // Load Stats
+    // Load Stats and Activity
     const statQ = document.getElementById('stat-queries');
     const statT = document.getElementById('stat-treasury');
     if (statQ && statT) {
@@ -271,6 +271,39 @@ async function initStudyPage() {
                 statQ.innerText = s.total_queries;
                 statT.innerText = (s.treasury_wei / 1e18).toFixed(2) + " GEN";
             } catch(e){}
+        }
+    }
+    
+    const actList = document.getElementById('activity-list');
+    if (actList) {
+        const activityData = await callContractView('get_recent_activity');
+        if (activityData) {
+            try {
+                const history = JSON.parse(activityData);
+                if (history.length === 0) {
+                    actList.innerHTML = `<p style="opacity:0.6; font-size:0.9rem;">No validations yet. Be the first!</p>`;
+                } else {
+                    actList.innerHTML = history.map(item => {
+                        const amt = (item.amount / 1e18).toFixed(1);
+                        const statusColor = item.accepted ? '#00ff88' : '#ff4444';
+                        const statusIcon = item.accepted ? '✅ REWARDED' : '🔥 BURNED';
+                        return `
+                        <div class="glass-card" style="padding: 1rem; border-left: 4px solid ${statusColor};">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+                                <strong style="font-size:1.1rem;">${item.term}</strong>
+                                <span style="font-size:0.8rem; font-weight:bold; color:${statusColor}">${statusIcon} ${amt} GEN</span>
+                            </div>
+                            <div style="font-size:0.85rem; opacity:0.7; font-family:monospace;">
+                                Proposer: ${shortenAddress(item.proposer)}
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e){
+                actList.innerHTML = `<p style="color:#ff4444;">Error loading activity.</p>`;
+            }
+        } else {
+            actList.innerHTML = `<p style="opacity:0.6;">Could not connect to GenLayer RPC.</p>`;
         }
     }
 }

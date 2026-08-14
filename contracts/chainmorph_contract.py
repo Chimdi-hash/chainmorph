@@ -23,10 +23,12 @@ class ChainMorphDictionary(gl.Contract):
     all_facts_cache: TreeMap[str, str]     # Term -> JSON fact data
     total_queries: u256
     popular_systems_list: str              # JSON list of physiological systems
+    recent_activity: str                   # JSON list of recent global activity
 
     def __init__(self):
         self.total_queries = u256(0)
         self.popular_systems_list = json.dumps(["Cardiovascular", "Nervous", "Respiratory", "Muscular", "Skeletal", "Digestive", "Endocrine", "Immune"])
+        self.recent_activity = json.dumps([])
 
     @staticmethod
     def _addr(a) -> str:
@@ -155,18 +157,18 @@ Return ONLY a valid JSON object (no markdown, no extra text):
                 "proposer": caller_str
             })
             
-            self._record(caller_str, term_lower, term_clean, safe_exp.get("verified_fact", ""), safe_exp.get("reasoning", ""), True)
+            self._record(caller_str, term_lower, term_clean, safe_exp.get("verified_fact", ""), safe_exp.get("reasoning", ""), True, stake_int)
         else:
             # REJECTED: Real Burning of the Stake
             # Transfer the stake to the null address (0x00...000)
             null_address = Address("0x0000000000000000000000000000000000000000")
             _Recipient(null_address).emit_transfer(value=u256(stake_int), on='finalized')
             
-            self._record(caller_str, term_lower, term_clean, proposed_fact, data.get("reasoning", "Invalid fact."), False)
+            self._record(caller_str, term_lower, term_clean, proposed_fact, data.get("reasoning", "Invalid fact."), False, stake_int)
 
         self.total_queries += 1
 
-    def _record(self, caller_str: str, term_lower: str, term_display: str, fact: str, reasoning: str, accepted: bool):
+    def _record(self, caller_str: str, term_lower: str, term_display: str, fact: str, reasoning: str, accepted: bool, stake_int: int):
         try:
             hist = json.loads(self.query_history[caller_str]) if caller_str in self.query_history else []
             if not isinstance(hist, list): hist = []
@@ -182,6 +184,22 @@ Return ONLY a valid JSON object (no markdown, no extra text):
         })
         if len(hist) > 50: hist = hist[-50:]
         self.query_history[caller_str] = json.dumps(hist)
+        
+        # Global Activity Feed
+        try:
+            global_hist = json.loads(self.recent_activity)
+            if not isinstance(global_hist, list): global_hist = []
+        except Exception:
+            global_hist = []
+            
+        global_hist.insert(0, {
+            "proposer": caller_str,
+            "term": term_display,
+            "accepted": accepted,
+            "amount": stake_int * 2 if accepted else stake_int
+        })
+        if len(global_hist) > 10: global_hist = global_hist[:10]
+        self.recent_activity = json.dumps(global_hist)
 
     @gl.public.view
     def get_cached_fact(self, term: str) -> str:
@@ -192,6 +210,10 @@ Return ONLY a valid JSON object (no markdown, no extra text):
     def get_user_history(self, user_address: str) -> str:
         k = user_address.strip().lower()
         return self.query_history[k] if k in self.query_history else "[]"
+
+    @gl.public.view
+    def get_recent_activity(self) -> str:
+        return self.recent_activity
 
     @gl.public.view
     def get_popular_systems(self) -> str:
