@@ -395,4 +395,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (path.includes('activity.html')) {
         initActivityPage();
     }
+    
+    // If we are on the homepage, initialize the activity feed there as well
+    if (path.includes('index.html') || path === '/' || path.endsWith('/')) {
+        initActivityPage();
+    }
 });
