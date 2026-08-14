@@ -84,9 +84,7 @@ a {
 }
 
 .nav-menu {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
+    display: contents;
 }
 
 .nav-links {
