@@ -79,6 +79,16 @@ a {
     letter-spacing: -0.5px;
 }
 
+.hamburger {
+    display: none;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
 .nav-links {
     display: flex;
     gap: 2rem;
@@ -497,8 +507,48 @@ footer {
     .study-sidebar {
         max-width: 100%;
     }
-    .nav-links {
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        cursor: pointer;
+    }
+    .hamburger span {
+        width: 25px;
+        height: 3px;
+        background: white;
+        transition: 0.3s;
+    }
+    .hamburger.active span:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+    
+    .nav-menu {
         display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(42, 0, 6, 0.95);
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-menu.active {
+        display: flex;
+    }
+    .nav-links {
+        flex-direction: column;
+        align-items: center;
+    }
+    .wallet-section {
+        flex-direction: column;
+        width: 100%;
+    }
+    .wallet-section .glass-btn {
+        width: 100%;
+        text-align: center;
     }
     .stats-grid {
         grid-template-columns: 1fr;

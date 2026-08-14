@@ -387,6 +387,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('connect-wallet-btn')?.addEventListener('click', connectWallet);
     document.getElementById('disconnect-wallet-btn')?.addEventListener('click', disconnectWallet);
     
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('nav-menu');
+    if (hamburger && navMenu) {
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+    }
+    
     await restoreSession();
     
     const path = window.location.pathname;
