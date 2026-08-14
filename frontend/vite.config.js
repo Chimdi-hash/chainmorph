@@ -6,7 +6,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        study: resolve(__dirname, 'study.html')
+        study: resolve(__dirname, 'study.html'),
+        activity: resolve(__dirname, 'activity.html')
       }
     }
   }
