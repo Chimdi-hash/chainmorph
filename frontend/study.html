@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainMorph | Study & Propose</title>
+    <link rel="stylesheet" href="./src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="particle-container"></div>
+    
+    <nav class="navbar">
+        <div class="logo"><a href="index.html">🧬 ChainMorph</a></div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="study.html" class="active">Study</a>
+        </div>
+        <div class="wallet-section">
+            <button id="connect-wallet-btn" class="glass-btn">Connect Wallet</button>
+            <div id="wallet-info" class="hidden">
+                <span id="wallet-balance" class="balance-badge">0 GEN</span>
+                <span id="wallet-address" class="address-badge">0x...</span>
+                <button id="disconnect-wallet-btn" class="glass-btn disconnect-btn">Disconnect</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="study-container">
+        
+        <div class="study-sidebar glass-card slide-in-up">
+            <h3>Propose New Fact</h3>
+            <p class="sub-text">Stake 1 GEN. Correct = 2 GEN reward. Incorrect = 1 GEN Burned.</p>
+            
+            <form id="propose-form">
+                <div class="input-group">
+                    <label>Physiological Term</label>
+                    <input type="text" id="prop-term" placeholder="e.g. Myelin Sheath" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Body System</label>
+                    <select id="prop-system" required>
+                        <option value="Cardiovascular">Cardiovascular</option>
+                        <option value="Nervous">Nervous</option>
+                        <option value="Respiratory">Respiratory</option>
+                        <option value="Muscular">Muscular</option>
+                        <option value="Skeletal">Skeletal</option>
+                        <option value="Digestive">Digestive</option>
+                        <option value="Endocrine">Endocrine</option>
+                        <option value="Immune">Immune</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Proposed Fact / Definition</label>
+                    <textarea id="prop-fact" rows="3" placeholder="Describe its function accurately..." required></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>Evidence URL</label>
+                    <input type="url" id="prop-url" placeholder="https://ncbi.nlm.nih.gov/..." required>
+                </div>
+                
+                <button type="submit" class="glass-btn primary full-width" id="submit-fact-btn">Propose Fact (Stake 1 GEN)</button>
+            </form>
+        </div>
+
+        <div class="study-main slide-in-up delay-1">
+            <div class="search-bar glass-card">
+                <input type="text" id="search-input" placeholder="Search the ChainMorph Dictionary...">
+                <button id="search-btn" class="glass-btn">Lookup</button>
+            </div>
+            
+            <div id="result-display" class="result-area glass-card hidden">
+                <!-- Result injected here via JS -->
+            </div>
+            
+            <div class="recent-proposals">
+                <h3>Global Stats</h3>
+                <div id="stats-container" class="stats-grid">
+                    <div class="stat-card glass-card">
+                        <span class="stat-value" id="stat-queries">0</span>
+                        <span class="stat-label">Total Facts Processed</span>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <span class="stat-value" id="stat-treasury">0 GEN</span>
+                        <span class="stat-label">Treasury Balance</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module" src="./src/app.js"></script>
+</body>
+</html>

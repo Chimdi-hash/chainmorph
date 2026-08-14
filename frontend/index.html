@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainMorph | Decentralized Human Physiology Oracle</title>
+    <link rel="stylesheet" href="./src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="particle-container"></div>
+    
+    <nav class="navbar">
+        <div class="logo">🧬 ChainMorph</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="study.html">Study</a>
+            <a href="#faq">FAQ</a>
+        </div>
+        <div class="wallet-section">
+            <button id="connect-wallet-btn" class="glass-btn">Connect Wallet</button>
+            <div id="wallet-info" class="hidden">
+                <span id="wallet-balance" class="balance-badge">0 GEN</span>
+                <span id="wallet-address" class="address-badge">0x...</span>
+                <button id="disconnect-wallet-btn" class="glass-btn disconnect-btn">Disconnect</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="hero">
+        <div class="hero-content">
+            <h1 class="slide-in-up">The Truth About <span class="highlight">Human Physiology</span>.</h1>
+            <p class="slide-in-up delay-1">ChainMorph is a decentralized oracle powered by GenLayer's Optimistic Democracy. Propose facts, validate with LLM consensus, and get rewarded natively.</p>
+            <div class="cta-buttons slide-in-up delay-2">
+                <a href="study.html" class="glass-btn primary">Enter the Dictionary</a>
+                <a href="#faq" class="glass-btn secondary">Learn More</a>
+            </div>
+        </div>
+        
+        <div class="hero-graphics slide-in-right delay-2">
+            <div class="glass-card animated-card">
+                <h3>Latest Validated Fact</h3>
+                <div class="fact-content">
+                    <span class="system-tag">Cardiovascular</span>
+                    <h4>Sinoatrial Node</h4>
+                    <p>The sinoatrial node is the heart's natural pacemaker, located in the upper wall of the right atrium. It generates electrical impulses that set the rhythm for the entire heart.</p>
+                </div>
+                <div class="validator-status">
+                    <span class="status-dot green"></span> Verified by 5 AI Validators
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <section id="faq" class="faq-section">
+        <h2 class="slide-in-up">Frequently Asked Questions</h2>
+        
+        <div class="faq-grid">
+            <div class="glass-card faq-card slide-in-up delay-1">
+                <h3>What is Human Physiology?</h3>
+                <p>Human physiology is the scientific study of the functions and mechanisms which work within a human body. It explores how cells, tissues, and organs work together to sustain life.</p>
+            </div>
+            
+            <div class="glass-card faq-card slide-in-up delay-2">
+                <h3>How does ChainMorph validate facts?</h3>
+                <p>Users submit physiological facts along with an authoritative evidence URL (e.g., PubMed, NCBI). ChainMorph's GenLayer smart contract triggers 5 AI validators using the Equivalence Principle to parse the URL and reach a consensus on accuracy.</p>
+            </div>
+
+            <div class="glass-card faq-card slide-in-up delay-3">
+                <h3>What happens to my staked GEN?</h3>
+                <p>If your submitted fact is <strong>ACCEPTED</strong>, you are rewarded instantly via direct native transfer. If your fact is <strong>REJECTED</strong> (hallucinated or inaccurate), your stake undergoes <strong>real burning</strong> and is permanently sent to the null address.</p>
+            </div>
+            
+            <div class="glass-card faq-card slide-in-up delay-4">
+                <h3>Is the data permanent?</h3>
+                <p>Yes. Once a physiological definition is validated by consensus, it is immutably stored in the ChainMorph on-chain dictionary (using a TreeMap structure in GenLayer).</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Built on GenLayer Studio 🧬 ChainMorph 2026</p>
+    </footer>
+
+    <script type="module" src="./src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+node_modules/
+dist/
+MyoGen_ref/
+.env
