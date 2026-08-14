@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainMorph | Recent Validations</title>
+    <link rel="stylesheet" href="./src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="particle-container"></div>
+    
+    <nav class="navbar">
+        <div class="logo"><a href="index.html">ChainMorph</a></div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="study.html">Study</a>
+            <a href="activity.html" class="active">Activity Feed</a>
+        </div>
+        <div class="wallet-section">
+            <button id="connect-wallet-btn" class="glass-btn">Connect Wallet</button>
+            <div id="wallet-info" class="hidden">
+                <span id="wallet-balance" class="balance-badge">0 GEN</span>
+                <span id="wallet-address" class="address-badge">0x...</span>
+                <button id="disconnect-wallet-btn" class="glass-btn disconnect-btn">Disconnect</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="hero" style="min-height: auto; padding: 4rem 5%; justify-content: center; text-align: center;">
+        <div class="hero-content">
+            <h1 class="slide-in-up">Recent <span class="highlight">Validations</span></h1>
+            <p class="slide-in-up delay-1">Live feed of global human physiology facts verified by the GenLayer protocol.</p>
+        </div>
+    </main>
+
+    <section style="padding: 0 5%; max-width: 800px; margin: 0 auto; padding-bottom: 4rem;">
+        <div class="recent-activity-feed glass-card slide-in-up delay-2" style="padding: 2rem;">
+            <div id="activity-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Activity items injected here -->
+                <p style="opacity:0.6; font-size:0.9rem; text-align: center;">Loading recent activity...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module" src="./src/app.js"></script>
+</body>
+</html>
