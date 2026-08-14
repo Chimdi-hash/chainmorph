@@ -103,8 +103,8 @@ Return ONLY a valid JSON object (no markdown, no extra text):
     "term": "{term_clean}",
     "system": "{physiological_system}",
     "verified_fact": "Correct fact based on evidence (if true, otherwise empty)",
-    "key_components": [],
-    "clinical_significance": ""
+    "detailed_explanation": "A thorough, educational explanation of the term's physiological function and clinical significance (if accurate).",
+    "visualization_type": "One of: cellular_diagram, anatomical_cross_section, functional_pathway, chemical_structure"
 }}"""
 
         result_str = gl.eq_principle.prompt_non_comparative(
@@ -113,7 +113,8 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             criteria=(
                 "The response is a valid JSON containing 'is_accurate' and 'reasoning'. "
                 "CRITICAL: 'is_accurate' MUST be false if the fact contradicts the evidence or standard physiology, "
-                "or if it describes the wrong system. 'is_accurate' is only true if it perfectly matches the source."
+                "or if it describes the wrong system. 'is_accurate' is only true if it perfectly matches the source. "
+                "Include a detailed educational explanation if accurate, and classify the best visualization type."
             ),
         )
 
@@ -138,9 +139,9 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             "term": data.get("term", term_clean),
             "system": data.get("system", physiological_system),
             "verified_fact": data.get("verified_fact", proposed_fact),
-            "clinical_significance": data.get("clinical_significance", ""),
-            "reasoning": data.get("reasoning", ""),
-            "key_components": data.get("key_components", []) if isinstance(data.get("key_components"), list) else []
+            "detailed_explanation": data.get("detailed_explanation", ""),
+            "visualization_type": data.get("visualization_type", "anatomical_cross_section"),
+            "reasoning": data.get("reasoning", "")
         }
 
         if is_accurate:

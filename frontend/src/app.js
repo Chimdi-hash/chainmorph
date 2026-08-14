@@ -227,23 +227,35 @@ async function initStudyPage() {
                 try {
                     const parsed = JSON.parse(resData);
                     if (parsed.found === false) {
-                        resultDisplay.innerHTML = `<p style="opacity: 0.7">Term "${term}" not found in the dictionary. Be the first to propose it and earn GEN!</p>`;
+                        document.getElementById('res-term').innerText = `Term "${term}" not found`;
+                        document.getElementById('res-system').innerText = "Unknown";
+                        document.getElementById('res-fact').innerHTML = "Not found in the dictionary. Be the first to propose it and earn GEN!";
+                        document.getElementById('res-detail').innerHTML = "";
+                        document.getElementById('res-reasoning').innerText = "";
+                        document.getElementById('res-source').innerText = "";
+                        const img = document.getElementById('viz-image');
+                        if (img) {
+                            img.src = "";
+                            img.classList.add('hidden');
+                        }
+                        document.getElementById('viz-label').innerText = "";
                     } else {
                         const info = parsed.explanation;
-                        resultDisplay.innerHTML = `
-                            <span class="system-tag">${info.system}</span>
-                            <h3 style="margin: 0.5rem 0; font-size: 1.8rem">${info.term}</h3>
-                            <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem">${info.verified_fact}</p>
-                            <p style="font-size: 0.9rem; opacity: 0.8; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1)">
-                                <strong>AI Validator Consensus:</strong> ${info.reasoning}
-                            </p>
-                        `;
+                        document.getElementById('res-system').innerText = info.system;
+                        document.getElementById('res-term').innerText = info.term;
+                        document.getElementById('res-fact').innerText = info.verified_fact;
+                        document.getElementById('res-detail').innerText = info.detailed_explanation || "Detailed explanation not available.";
+                        document.getElementById('res-reasoning').innerText = info.reasoning;
+                        document.getElementById('res-source').innerHTML = `Source verification complete.`;
+                        
+                        drawVisualization(info.visualization_type || 'cellular_diagram', info.term);
                     }
                 } catch(e) {
-                    resultDisplay.innerHTML = `<p>Error parsing dictionary data.</p>`;
+                    console.error(e);
+                    document.getElementById('res-fact').innerHTML = `<p>Error parsing dictionary data.</p>`;
                 }
             } else {
-                resultDisplay.innerHTML = `<p>Error connecting to GenLayer Studio.</p>`;
+                document.getElementById('res-fact').innerHTML = `<p>Error connecting to GenLayer Studio.</p>`;
             }
         });
     }
@@ -261,6 +273,45 @@ async function initStudyPage() {
             } catch(e){}
         }
     }
+}
+
+// ========================
+// REAL DIAGRAM FETCHING
+// ========================
+async function drawVisualization(vizType, term) {
+    const imgEl = document.getElementById('viz-image');
+    const labelEl = document.getElementById('viz-label');
+    const sourceEl = document.getElementById('res-source');
+    
+    if (!imgEl) return;
+    
+    imgEl.classList.add('hidden');
+    imgEl.src = "";
+    labelEl.textContent = "Fetching authentic diagram...";
+    sourceEl.innerHTML = "<em>Retrieving diagram source...</em>";
+
+    // Fetch authentic image from Wikipedia API to avoid generated/mock images
+    try {
+        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`);
+        if (response.ok) {
+            const wikiData = await response.json();
+            if (wikiData.thumbnail && wikiData.thumbnail.source) {
+                imgEl.src = wikiData.thumbnail.source;
+                imgEl.onload = () => {
+                    imgEl.classList.remove('hidden');
+                    labelEl.textContent = `${vizType.toUpperCase().replace(/_/g,' ')} · ${term.toUpperCase()}`;
+                    sourceEl.innerHTML = `<strong>Diagram Source:</strong> <a href="${wikiData.content_urls.desktop.page}" target="_blank" style="color:#00ff88; text-decoration: underline;">Wikipedia (${wikiData.title})</a>`;
+                };
+                return;
+            }
+        }
+    } catch(e) {
+        console.warn("Could not fetch authentic image", e);
+    }
+
+    // If no authentic image is found, we do NOT display a mock canvas diagram.
+    labelEl.textContent = `NO AUTHENTIC DIAGRAM AVAILABLE FOR: ${term.toUpperCase()}`;
+    sourceEl.innerHTML = `<strong>Diagram Source:</strong> None found in verified databases for this specific term.`;
 }
 
 // ========================

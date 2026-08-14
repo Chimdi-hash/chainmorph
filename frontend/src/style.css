@@ -16,6 +16,10 @@
     box-sizing: border-box;
 }
 
+html {
+    font-size: 85%; /* Reduces overall scale */
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background: linear-gradient(135deg, var(--oxblood-dark) 0%, var(--oxblood-main) 100%);
@@ -126,7 +130,7 @@ a {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 30px; /* Increased curve */
     padding: 2rem;
     box-shadow: var(--glass-shadow);
 }
@@ -266,9 +270,32 @@ a {
 }
 
 .faq-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    display: flex;
+    white-space: nowrap;
     gap: 2rem;
+    animation: scrollMarquee 30s linear infinite;
+    width: max-content;
+}
+
+.faq-marquee-wrapper {
+    overflow: hidden;
+    width: 100%;
+    position: relative;
+}
+
+.faq-marquee-wrapper:hover .faq-grid {
+    animation-play-state: paused;
+}
+
+@keyframes scrollMarquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.faq-card {
+    min-width: 350px;
+    max-width: 350px;
+    white-space: normal; /* Let text wrap inside the card */
 }
 
 .faq-card h3 {
