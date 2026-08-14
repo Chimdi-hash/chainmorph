@@ -293,12 +293,12 @@ async function initActivityPage() {
                         const statusColor = item.accepted ? '#00ff88' : '#ff4444';
                         const statusIcon = item.accepted ? '✅ REWARDED' : '🔥 BURNED';
                         return `
-                        <div class="glass-card" style="padding: 1.5rem; border-left: 4px solid ${statusColor}; margin-bottom: 1rem; text-align: left;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
-                                <strong style="font-size:1.2rem;">${item.term}</strong>
-                                <span style="font-size:0.9rem; font-weight:bold; color:${statusColor}; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">${statusIcon} ${amt} GEN</span>
+                        <div class="glass-card" style="padding: 1rem; border-left: 4px solid ${statusColor}; margin-bottom: 0.8rem; text-align: left;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.3rem;">
+                                <strong style="font-size:1.1rem;">${item.term}</strong>
+                                <span style="font-size:0.8rem; font-weight:bold; color:${statusColor}; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">${statusIcon} ${amt} GEN</span>
                             </div>
-                            <div style="font-size:0.85rem; opacity:0.7; font-family:monospace;">
+                            <div style="font-size:0.8rem; opacity:0.7; font-family:monospace;">
                                 Proposer: ${shortenAddress(item.proposer)}
                             </div>
                         </div>`;
