@@ -18,15 +18,34 @@
 
 html {
     font-size: 85%; /* Reduces overall scale */
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    background-color: var(--oxblood-dark);
 }
 
 body {
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, var(--oxblood-dark) 0%, var(--oxblood-main) 100%);
     color: var(--white);
     min-height: 100vh;
     overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
     position: relative;
+    background-color: var(--oxblood-dark); /* fallback */
+}
+
+/* Fixed background for iOS compatibility */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--oxblood-dark) 0%, var(--oxblood-main) 100%);
+    z-index: -2;
+    pointer-events: none;
 }
 
 a {
@@ -310,9 +329,16 @@ a {
 }
 
 .faq-card {
-    min-width: 350px;
-    max-width: 350px;
+    min-width: 80vw;
+    max-width: 80vw;
     white-space: normal; /* Let text wrap inside the card */
+}
+
+@media (min-width: 768px) {
+    .faq-card {
+        min-width: 350px;
+        max-width: 350px;
+    }
 }
 
 .faq-card h3 {
@@ -493,11 +519,18 @@ footer {
         padding-top: 4rem;
         gap: 3rem;
     }
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+    .hero p {
+        font-size: 1rem;
+    }
     .hero-content {
         padding-right: 0;
     }
     .cta-buttons {
         justify-content: center;
+        flex-wrap: wrap;
     }
     .study-container {
         flex-direction: column;
