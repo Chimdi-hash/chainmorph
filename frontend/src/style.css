@@ -527,6 +527,9 @@ footer {
     }
     .hero-content {
         padding-right: 0;
+        flex: none;
+        justify-content: center;
+        margin: auto 0;
     }
     .cta-buttons {
         justify-content: center;
