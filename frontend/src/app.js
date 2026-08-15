@@ -1,4 +1,5 @@
 import { createClient } from 'genlayer-js';
+import { studionet } from 'genlayer-js/chains';
 
 // ChainMorph Configuration
 const GENLAYER_CONFIG = {
@@ -188,11 +189,7 @@ async function initStudyPage() {
             try {
                 // Use genlayer-js SDK for correct addTransaction ABI encoding
                 const writeClient = createClient({
-                    chain: { 
-                        id: 0, 
-                        name: 'GenLayer Studio', 
-                        rpcUrls: { default: { http: [GENLAYER_CONFIG.rpcUrls[0]] } } 
-                    },
+                    chain: studionet,
                     account: walletState.address,
                     provider: window.ethereum,
                 });
