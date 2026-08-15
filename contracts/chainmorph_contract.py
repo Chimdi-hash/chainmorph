@@ -14,8 +14,8 @@ class ChainMorphDictionary(gl.Contract):
 
     ECONOMIC MODEL:
     - Stake 1 GEN per proposition (fact or definition).
-    - ACCEPTED  → Caller immediately receives 2 GEN (native transfer).
-    - REJECTED  → 1 GEN is immediately burned (sent to null address).
+    - ACCEPTED  -> Caller immediately receives 2 GEN (native transfer).
+    - REJECTED  -> 1 GEN is immediately burned (sent to null address).
     """
 
     # Storage
@@ -30,13 +30,14 @@ class ChainMorphDictionary(gl.Contract):
         self.popular_systems_list = json.dumps(["Cardiovascular", "Nervous", "Respiratory", "Muscular", "Skeletal", "Digestive", "Endocrine", "Immune"])
         self.recent_activity = json.dumps([])
 
-    @staticmethod
-    def _addr(a) -> str:
-        return str(a).lower()
+    def _addr(self, address) -> str:
+        if hasattr(address, "as_hex"):
+            return address.as_hex
+        return str(address)
 
-    @gl.public.write.payable
-    def fund_treasury(self):
-        """Allow anyone to deposit GEN into the treasury to fund rewards."""
+    @gl.public.write
+    def receive(self):
+        # Native fallback to accept GEN funding directly
         pass
 
     @gl.public.write.payable
@@ -57,7 +58,7 @@ class ChainMorphDictionary(gl.Contract):
         if term_lower in self.all_facts_cache:
             raise Exception(f"'{term_clean}' is already in the ChainMorph dictionary.")
 
-        # Check if contract has enough uncommitted funds to back the 2x reward
+        # Check if contract has enough uncommitted funds to back the 2x reward natively
         try:
             current_balance = gl.get_self_balance()
         except AttributeError:
@@ -84,10 +85,10 @@ Evidence URL: "{evidence_url}"
 {web_data}
 --------------------------------
 
-STEP 1 — Read the evidence webpage content carefully.
-STEP 2 — Find what the source says about "{term_clean}".
-STEP 3 — Compare the proposed fact against the source facts.
-STEP 4 — Apply REJECTION CRITERIA below.
+STEP 1 -> Read the evidence webpage content carefully.
+STEP 2 -> Find what the source says about "{term_clean}".
+STEP 3 -> Compare the proposed fact against the source facts.
+STEP 4 -> Apply REJECTION CRITERIA below.
 
 MANDATORY REJECTION RULES (set is_accurate=false if ANY apply):
 - The proposed fact describes the WRONG biological function.
