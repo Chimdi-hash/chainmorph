@@ -24,13 +24,11 @@ class ChainMorphDictionary(gl.Contract):
     total_queries: u256
     popular_systems_list: str              # JSON list of physiological systems
     recent_activity: str                   # JSON list of recent global activity
-    treasury_wei: u256
 
     def __init__(self):
         self.total_queries = u256(0)
         self.popular_systems_list = json.dumps(["Cardiovascular", "Nervous", "Respiratory", "Muscular", "Skeletal", "Digestive", "Endocrine", "Immune"])
         self.recent_activity = json.dumps([])
-        self.treasury_wei = u256(0)
 
     @staticmethod
     def _addr(a) -> str:
@@ -38,8 +36,8 @@ class ChainMorphDictionary(gl.Contract):
 
     @gl.public.write.payable
     def fund_treasury(self):
-        """Allows anybody to send generic funds to collateralize the treasury."""
-        self.treasury_wei += u256(gl.message.value)
+        """Allow anyone to deposit GEN into the treasury to fund rewards."""
+        pass
 
     @gl.public.write.payable
     def propose_fact(self, term: str, physiological_system: str, proposed_fact: str, evidence_url: str):
@@ -49,8 +47,6 @@ class ChainMorphDictionary(gl.Contract):
 
         if stake < ONE_GEN:
             raise Exception("Must stake at least 1 GEN to propose a fact.")
-
-        self.treasury_wei += u256(stake)
 
         term_clean = term.strip()
         term_lower = term_clean.lower()
@@ -152,7 +148,6 @@ Return ONLY a valid JSON object (no markdown, no extra text):
 
         if is_accurate:
             # ACCEPTED: Direct Native Transfer of 2x Stake (Reward)
-            self.treasury_wei -= u256(reward_wei)
             _Recipient(caller).emit_transfer(value=u256(reward_wei), on='finalized')
             
             # Cache result
@@ -226,7 +221,11 @@ Return ONLY a valid JSON object (no markdown, no extra text):
 
     @gl.public.view
     def get_stats(self) -> str:
+        try:
+            bal = gl.get_self_balance()
+        except:
+            bal = 0
         return json.dumps({
             "total_queries": int(self.total_queries),
-            "treasury_wei": int(self.treasury_wei)
+            "treasury_wei": int(bal)
         })
