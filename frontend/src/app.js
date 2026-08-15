@@ -1,3 +1,5 @@
+import { createClient } from 'genlayer-js';
+
 // ChainMorph Configuration
 const GENLAYER_CONFIG = {
     chainId: '0xF22F',        // 61999
@@ -184,22 +186,24 @@ async function initStudyPage() {
             
             showToast('Sending transaction... please sign in MetaMask.', 'info');
             try {
-                const data = JSON.stringify({
-                    method: 'propose_fact',
-                    params: [term, sys, fact, url]
+                // Use genlayer-js SDK for correct addTransaction ABI encoding
+                const writeClient = createClient({
+                    chain: { 
+                        id: 0, 
+                        name: 'GenLayer Studio', 
+                        rpcUrls: { default: { http: [GENLAYER_CONFIG.rpcUrls[0]] } } 
+                    },
+                    account: walletState.address,
+                    provider: window.ethereum,
                 });
-                
-                // Note: Real deployment would use ethers.js or web3.js for standard tx format.
-                // Assuming standard EVM compat. value is 1 GEN (1e18 wei).
-                const txHash = await window.ethereum.request({
-                    method: 'eth_sendTransaction',
-                    params: [{
-                        from: walletState.address,
-                        to: CONTRACT_ADDRESS,
-                        value: '0x0de0b6b3a7640000', // 1 GEN in Hex
-                        data: '0x' + btoa(data).split('').map(c => c.charCodeAt(0).toString(16)).join('') // Dummy encode for GenLayer
-                    }]
+
+                const txHash = await writeClient.writeContract({
+                    address: CONTRACT_ADDRESS,
+                    functionName: 'propose_fact',
+                    args: [term, sys, fact, url],
+                    value: 1000000000000000000n, // 1 GEN (BigInt)
                 });
+
                 showToast(`Transaction sent! Validating via Optimistic Democracy...`, 'success');
                 proposeForm.reset();
                 // Polling for status or refreshing would happen here
