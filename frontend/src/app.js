@@ -144,23 +144,23 @@ async function restoreSession() {
 // ========================
 // RPC CALLS (GENLAYER)
 // ========================
-async function callContractView(method, params = []) {
+async function callContractView(method, args = []) {
     try {
-        const res = await fetch(GENLAYER_CONFIG.rpcUrls[0], {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                method: 'gen_call',
-                params: [{
-                    to: CONTRACT_ADDRESS,
-                    data: JSON.stringify({ method, params })
-                }, 'latest'],
-                id: Date.now()
-            })
+        const { createClient } = await import('https://esm.sh/genlayer-js@0.1.7?bundle');
+        const { studionet } = await import('https://esm.sh/genlayer-js@0.1.7/chains');
+        
+        const readClient = createClient({
+            chain: studionet,
+            account: walletState.address || "0x0000000000000000000000000000000000000000"
         });
-        const json = await res.json();
-        return json.result; // Returns the JSON string from Python contract
+
+        const result = await readClient.readContract({
+            address: CONTRACT_ADDRESS,
+            functionName: method,
+            args: args
+        });
+        
+        return result;
     } catch(e) {
         console.error("RPC View error", e);
         return null;
