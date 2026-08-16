@@ -21,6 +21,7 @@ class ChainMorphDictionary(gl.Contract):
     # Storage
     query_history: TreeMap[str, str]       # Address -> JSON history
     all_facts_cache: TreeMap[str, str]     # Term -> JSON fact data
+    user_latest_validation: TreeMap[str, str] # Address -> JSON validation result (latest)
     total_queries: u256
     popular_systems_list: str              # JSON list of physiological systems
     recent_activity: str                   # JSON list of recent global activity
@@ -147,6 +148,18 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             "reasoning": data.get("reasoning", "")
         }
 
+        # Store the complete validation payload for the user so the frontend can immediately fetch it
+        self.user_latest_validation[caller_str] = json.dumps({
+            "term": safe_exp["term"],
+            "system": safe_exp["system"],
+            "fact": proposed_fact,
+            "verified_fact": safe_exp["verified_fact"],
+            "detailed_explanation": safe_exp["detailed_explanation"],
+            "visualization_type": safe_exp["visualization_type"],
+            "reasoning": safe_exp["reasoning"],
+            "accepted": is_accurate
+        })
+
         if is_accurate:
             # ACCEPTED: Direct Native Transfer of 2x Stake (Reward)
             _Recipient(caller).emit_transfer(value=u256(reward_wei), on='finalized')
@@ -211,6 +224,11 @@ Return ONLY a valid JSON object (no markdown, no extra text):
     def get_user_history(self, user_address: str) -> str:
         k = user_address.strip().lower()
         return self.query_history[k] if k in self.query_history else "[]"
+
+    @gl.public.view
+    def get_user_latest_validation(self, user_address: str) -> str:
+        k = user_address.strip().lower()
+        return self.user_latest_validation[k] if k in self.user_latest_validation else "{}"
 
     @gl.public.view
     def get_recent_activity(self) -> str:

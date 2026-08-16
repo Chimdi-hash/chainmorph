@@ -208,13 +208,41 @@ async function initStudyPage() {
                 if (receipt.status === 'success') {
                     showToast(`Validation complete! Loading results...`, 'success');
                     proposeForm.reset();
-                    
-                    // Automatically trigger the lookup to display the result
-                    const searchInput = document.getElementById('search-input');
-                    const searchBtn = document.getElementById('search-btn');
-                    if (searchInput && searchBtn) {
-                        searchInput.value = term;
-                        searchBtn.click();
+                    // Fetch the latest validation result from the contract directly!
+                    const lastValStr = await callContractView('get_user_latest_validation', [walletState.address]);
+                    if (lastValStr && lastValStr !== "{}") {
+                        const info = JSON.parse(lastValStr);
+                        
+                        const resultDisplay = document.getElementById('result-display');
+                        resultDisplay.classList.remove('hidden');
+                        
+                        document.getElementById('res-system').innerText = info.system;
+                        document.getElementById('res-term').innerText = info.term;
+                        
+                        // Set the fact based on outcome
+                        if (info.accepted) {
+                            document.getElementById('res-fact').innerText = info.verified_fact;
+                            document.getElementById('res-system').style.background = "var(--primary)";
+                        } else {
+                            document.getElementById('res-fact').innerHTML = `<span style="color: #ff4d4d">REJECTED:</span> ${info.fact}`;
+                            document.getElementById('res-system').style.background = "#ff4d4d";
+                        }
+                        
+                        document.getElementById('res-detail').innerText = info.detailed_explanation || "";
+                        document.getElementById('res-reasoning').innerText = info.reasoning;
+                        document.getElementById('res-source').innerHTML = info.accepted ? `Source verification complete.` : `Validation failed.`;
+                        
+                        const img = document.getElementById('viz-image');
+                        const label = document.getElementById('viz-label');
+                        if (img && info.accepted) {
+                            img.src = `https://image.pollinations.ai/prompt/Scientific%20${info.visualization_type}%20of%20${encodeURIComponent(info.term)}%20human%20physiology%20detailed%20diagram%20educational?width=800&height=400&nologo=true`;
+                            img.classList.remove('hidden');
+                            if(label) label.innerText = info.visualization_type.replace(/_/g, ' ').toUpperCase();
+                        } else if (img) {
+                            img.src = "";
+                            img.classList.add('hidden');
+                            if(label) label.innerText = "";
+                        }
                     }
                 } else {
                     showToast(`Transaction reverted during execution.`, 'error');
