@@ -146,8 +146,6 @@ async function restoreSession() {
 // ========================
 async function callContractView(method, args = []) {
     try {
-        const { createClient } = await import('https://esm.sh/genlayer-js@0.1.7?bundle');
-        const { studionet } = await import('https://esm.sh/genlayer-js@0.1.7/chains');
         
         const readClient = createClient({
             chain: studionet,
@@ -309,56 +307,7 @@ async function initStudyPage() {
         });
     }
 
-    const searchBtn = document.getElementById('search-btn');
-    const searchInput = document.getElementById('search-input');
-    const resultDisplay = document.getElementById('result-display');
-    
-    if (searchBtn && searchInput) {
-        searchBtn.addEventListener('click', async () => {
-            const term = searchInput.value.trim();
-            if (!term) return;
-            
-            searchBtn.innerText = "Loading...";
-            const resData = await callContractView('get_cached_fact', [term]);
-            searchBtn.innerText = "Lookup";
-            
-            resultDisplay.classList.remove('hidden');
-            if (resData) {
-                try {
-                    const parsed = JSON.parse(resData);
-                    if (parsed.found === false) {
-                        document.getElementById('res-term').innerText = `Term "${term}" not found`;
-                        document.getElementById('res-system').innerText = "Unknown";
-                        document.getElementById('res-fact').innerHTML = "Not found in the dictionary. Be the first to propose it and earn GEN!";
-                        document.getElementById('res-detail').innerHTML = "";
-                        document.getElementById('res-reasoning').innerText = "";
-                        document.getElementById('res-source').innerText = "";
-                        const img = document.getElementById('viz-image');
-                        if (img) {
-                            img.src = "";
-                            img.classList.add('hidden');
-                        }
-                        document.getElementById('viz-label').innerText = "";
-                    } else {
-                        const info = parsed.explanation;
-                        document.getElementById('res-system').innerText = info.system;
-                        document.getElementById('res-term').innerText = info.term;
-                        document.getElementById('res-fact').innerText = info.verified_fact;
-                        document.getElementById('res-detail').innerText = info.detailed_explanation || "Detailed explanation not available.";
-                        document.getElementById('res-reasoning').innerText = info.reasoning;
-                        document.getElementById('res-source').innerHTML = `Source verification complete.`;
-                        
-                        drawVisualization(info.visualization_type || 'cellular_diagram', info.term);
-                    }
-                } catch(e) {
-                    console.error(e);
-                    document.getElementById('res-fact').innerHTML = `<p>Error parsing dictionary data.</p>`;
-                }
-            } else {
-                document.getElementById('res-fact').innerHTML = `<p>Error connecting to GenLayer Studio.</p>`;
-            }
-        });
-    }
+    // Search logic removed as per UI update
 
     // Load Stats
     const statQ = document.getElementById('stat-queries');

@@ -73,11 +73,6 @@
         </div>
 
         <div class="study-main slide-in-up delay-1">
-            <div class="search-bar glass-card">
-                <input type="text" id="search-input" placeholder="Search the ChainMorph Dictionary...">
-                <button id="search-btn" class="glass-btn">Lookup</button>
-            </div>
-            
             <div id="result-display" class="result-area glass-card hidden">
                 <div class="result-header">
                     <span class="system-tag" id="res-system"></span>
@@ -101,24 +96,25 @@
                     <span id="res-source"></span>
                 </div>
             </div>
-            
-            <div class="recent-proposals">
-                <h3>Global Stats</h3>
-                <div id="stats-container" class="stats-grid">
-                    <div class="stat-card glass-card">
-                        <span class="stat-value" id="stat-queries">0</span>
-                        <span class="stat-label">Total Facts Processed</span>
-                    </div>
-                    <div class="stat-card glass-card">
-                        <span class="stat-value" id="stat-treasury">0 GEN</span>
-                        <span class="stat-label">Treasury Balance</span>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
     </main>
+
+    <div class="bottom-stats-container">
+        <div class="recent-proposals">
+            <h3 style="text-align: center; margin-bottom: 1rem;">Global Stats</h3>
+            <div id="stats-container" class="stats-grid" style="max-width: 800px; margin: 0 auto;">
+                <div class="stat-card glass-card">
+                    <span class="stat-value" id="stat-queries">0</span>
+                    <span class="stat-label">Total Facts Processed</span>
+                </div>
+                <div class="stat-card glass-card">
+                    <span class="stat-value" id="stat-treasury">0 GEN</span>
+                    <span class="stat-label">Treasury Balance</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
