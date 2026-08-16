@@ -201,9 +201,24 @@ async function initStudyPage() {
                     value: 1000000000000000000n, // 1 GEN (BigInt)
                 });
 
-                showToast(`Transaction sent! Validating via Optimistic Democracy...`, 'success');
-                proposeForm.reset();
-                // Polling for status or refreshing would happen here
+                showToast(`Transaction sent! Waiting for validator consensus... (This may take a few seconds)`, 'info');
+                
+                const receipt = await writeClient.waitForTransactionReceipt({ hash: txHash });
+                
+                if (receipt.status === 'success') {
+                    showToast(`Validation complete! Loading results...`, 'success');
+                    proposeForm.reset();
+                    
+                    // Automatically trigger the lookup to display the result
+                    const searchInput = document.getElementById('search-input');
+                    const searchBtn = document.getElementById('search-btn');
+                    if (searchInput && searchBtn) {
+                        searchInput.value = term;
+                        searchBtn.click();
+                    }
+                } else {
+                    showToast(`Transaction reverted during execution.`, 'error');
+                }
             } catch (err) {
                 showToast(`Tx Failed: ${err.message}`, 'error');
             }
