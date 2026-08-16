@@ -208,40 +208,51 @@ async function initStudyPage() {
                 if (receipt.status === 'success') {
                     showToast(`Validation complete! Loading results...`, 'success');
                     proposeForm.reset();
-                    // Fetch the latest validation result from the contract directly!
-                    const lastValStr = await callContractView('get_user_latest_validation', [walletState.address]);
-                    if (lastValStr && lastValStr !== "{}") {
-                        const info = JSON.parse(lastValStr);
-                        
-                        const resultDisplay = document.getElementById('result-display');
-                        resultDisplay.classList.remove('hidden');
-                        
-                        document.getElementById('res-system').innerText = info.system;
-                        document.getElementById('res-term').innerText = info.term;
-                        
-                        // Set the fact based on outcome
-                        if (info.accepted) {
-                            document.getElementById('res-fact').innerText = info.verified_fact;
-                            document.getElementById('res-system').style.background = "var(--primary)";
-                        } else {
-                            document.getElementById('res-fact').innerHTML = `<span style="color: #ff4d4d">REJECTED:</span> ${info.fact}`;
-                            document.getElementById('res-system').style.background = "#ff4d4d";
-                        }
-                        
-                        document.getElementById('res-detail').innerText = info.detailed_explanation || "";
-                        document.getElementById('res-reasoning').innerText = info.reasoning;
-                        document.getElementById('res-source').innerHTML = info.accepted ? `Source verification complete.` : `Validation failed.`;
-                        
-                        const img = document.getElementById('viz-image');
-                        const label = document.getElementById('viz-label');
-                        if (img && info.accepted) {
-                            img.src = `https://image.pollinations.ai/prompt/Scientific%20${info.visualization_type}%20of%20${encodeURIComponent(info.term)}%20human%20physiology%20detailed%20diagram%20educational?width=800&height=400&nologo=true`;
-                            img.classList.remove('hidden');
-                            if(label) label.innerText = info.visualization_type.replace(/_/g, ' ').toUpperCase();
-                        } else if (img) {
-                            img.src = "";
-                            img.classList.add('hidden');
-                            if(label) label.innerText = "";
+                    
+                    // Fetch the latest validation result from the transaction receipt live!
+                    let lastValStr = null;
+                    if (receipt.data) {
+                        lastValStr = receipt.data; // GenLayer receipt contains the return value
+                    } else if (receipt.result) {
+                        lastValStr = receipt.result;
+                    }
+                    
+                    if (lastValStr) {
+                        try {
+                            const info = typeof lastValStr === 'string' ? JSON.parse(lastValStr) : lastValStr;
+                            
+                            const resultDisplay = document.getElementById('result-display');
+                            resultDisplay.classList.remove('hidden');
+                            
+                            document.getElementById('res-system').innerText = info.system || sys;
+                            document.getElementById('res-term').innerText = info.term || term;
+                            
+                            // Set the fact based on outcome
+                            if (info.accepted) {
+                                document.getElementById('res-fact').innerText = info.verified_fact;
+                                document.getElementById('res-system').style.background = "var(--primary)";
+                            } else {
+                                document.getElementById('res-fact').innerHTML = `<span style="color: #ff4d4d">REJECTED:</span> ${info.fact || fact}`;
+                                document.getElementById('res-system').style.background = "#ff4d4d";
+                            }
+                            
+                            document.getElementById('res-detail').innerText = info.detailed_explanation || "";
+                            document.getElementById('res-reasoning').innerText = info.reasoning || "Invalid fact.";
+                            document.getElementById('res-source').innerHTML = info.accepted ? `Source verification complete.` : `Validation failed.`;
+                            
+                            const img = document.getElementById('viz-image');
+                            const label = document.getElementById('viz-label');
+                            if (img && info.accepted && info.visualization_type) {
+                                img.src = `https://image.pollinations.ai/prompt/Scientific%20${info.visualization_type}%20of%20${encodeURIComponent(info.term || term)}%20human%20physiology%20detailed%20diagram%20educational?width=800&height=400&nologo=true`;
+                                img.classList.remove('hidden');
+                                if(label) label.innerText = info.visualization_type.replace(/_/g, ' ').toUpperCase();
+                            } else if (img) {
+                                img.src = "";
+                                img.classList.add('hidden');
+                                if(label) label.innerText = "";
+                            }
+                        } catch(e) {
+                            console.error("Error parsing live validation result:", e);
                         }
                     }
                 } else {

@@ -21,7 +21,6 @@ class ChainMorphDictionary(gl.Contract):
     # Storage
     query_history: TreeMap[str, str]       # Address -> JSON history
     all_facts_cache: TreeMap[str, str]     # Term -> JSON fact data
-    user_latest_validation: TreeMap[str, str] # Address -> JSON validation result (latest)
     total_queries: u256
     popular_systems_list: str              # JSON list of physiological systems
     recent_activity: str                   # JSON list of recent global activity
@@ -148,8 +147,8 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             "reasoning": data.get("reasoning", "")
         }
 
-        # Store the complete validation payload for the user so the frontend can immediately fetch it
-        self.user_latest_validation[caller_str] = json.dumps({
+        # Prepare the validation payload to return live from this transaction
+        validation_result = json.dumps({
             "term": safe_exp["term"],
             "system": safe_exp["system"],
             "fact": proposed_fact,
@@ -181,6 +180,9 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             self._record(caller_str, term_lower, term_clean, proposed_fact, data.get("reasoning", "Invalid fact."), False, stake_int)
 
         self.total_queries += 1
+        
+        # Return the adjudication result live without storing it in temporary memory
+        return validation_result
 
     def _record(self, caller_str: str, term_lower: str, term_display: str, fact: str, reasoning: str, accepted: bool, stake_int: int):
         try:
@@ -224,11 +226,6 @@ Return ONLY a valid JSON object (no markdown, no extra text):
     def get_user_history(self, user_address: str) -> str:
         k = user_address.strip().lower()
         return self.query_history[k] if k in self.query_history else "[]"
-
-    @gl.public.view
-    def get_user_latest_validation(self, user_address: str) -> str:
-        k = user_address.strip().lower()
-        return self.user_latest_validation[k] if k in self.user_latest_validation else "{}"
 
     @gl.public.view
     def get_recent_activity(self) -> str:
