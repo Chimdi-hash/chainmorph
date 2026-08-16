@@ -32,8 +32,8 @@ class ChainMorphDictionary(gl.Contract):
 
     def _addr(self, address) -> str:
         if hasattr(address, "as_hex"):
-            return address.as_hex
-        return str(address)
+            return address.as_hex.lower()
+        return str(address).lower()
 
     @gl.public.write
     def receive(self):
