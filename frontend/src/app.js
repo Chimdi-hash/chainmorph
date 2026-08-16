@@ -227,16 +227,30 @@ async function initStudyPage() {
                     showToast(`Validation complete! Loading results...`, 'success');
                     proposeForm.reset();
                     
-                    // Fetch lightweight history to get the outcome and reasoning
-                    const historyStr = await callContractView('get_user_history', [walletState.address]);
+                    // Poll lightweight history until the RPC state syncs the new transaction
                     let info = null;
-                    if (historyStr && historyStr !== "[]") {
-                        try {
-                            const history = JSON.parse(historyStr);
-                            if (history.length > 0) {
-                                info = history[history.length - 1]; // Get the last one
-                            }
-                        } catch(e) { console.error(e); }
+                    for (let attempts = 0; attempts < 15; attempts++) {
+                        const historyStr = await callContractView('get_user_history', [walletState.address]);
+                        if (historyStr && historyStr !== "[]") {
+                            try {
+                                const history = JSON.parse(historyStr);
+                                if (history.length > 0) {
+                                    const latest = history[history.length - 1];
+                                    // Check if the latest history matches our proposed term
+                                    if ((latest.term_lower && latest.term_lower === term.toLowerCase()) || 
+                                        (latest.term && latest.term.toLowerCase() === term.toLowerCase())) {
+                                        info = latest;
+                                        break; // Found it!
+                                    }
+                                }
+                            } catch(e) { console.error(e); }
+                        }
+                        // Wait 2 seconds before checking again
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+
+                    if (!info) {
+                        showToast("Result taking longer than expected to sync to RPC. Please check your activity feed in a moment.", "warning");
                     }
 
                     if (info) {
