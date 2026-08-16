@@ -203,9 +203,27 @@ async function initStudyPage() {
 
                 showToast(`Transaction sent! Waiting for validator consensus... (This may take a few seconds)`, 'info');
                 
-                const receipt = await writeClient.waitForTransactionReceipt({ hash: txHash });
+                // Custom polling loop to avoid viem aggressive polling rate limits/CORS errors
+                let receipt = null;
+                for (let i = 0; i < 40; i++) {
+                    await new Promise(r => setTimeout(r, 3000));
+                    try {
+                        const res = await window.ethereum.request({
+                            method: 'eth_getTransactionReceipt',
+                            params: [txHash]
+                        });
+                        if (res && res.blockNumber) {
+                            receipt = res;
+                            break;
+                        }
+                    } catch(e) {
+                        console.warn("Polling receipt...", e);
+                    }
+                }
                 
-                if (receipt && receipt.status !== 'reverted' && receipt.status !== 0 && receipt.status !== 'REJECTED') {
+                if (!receipt) throw new Error("Transaction receipt polling timed out.");
+                
+                if (receipt && receipt.status !== '0x0' && receipt.status !== 0 && receipt.status !== 'REJECTED') {
                     showToast(`Validation complete! Loading results...`, 'success');
                     proposeForm.reset();
                     
