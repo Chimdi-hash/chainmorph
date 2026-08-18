@@ -383,46 +383,7 @@ function renderResult(info, sys, save = true) {
     }
 }
 
-    // Load Stats
-    const statQ = document.getElementById('stat-queries');
-    const statT = document.getElementById('stat-treasury');
-    if (statQ && statT) {
-        const stats = await callContractView('get_stats');
-        
-        let treasuryWei = 0;
-        try {
-            const res = await fetch(GENLAYER_CONFIG.rpcUrls[0], {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    method: 'eth_getBalance',
-                    params: [CONTRACT_ADDRESS, 'latest'],
-                    id: Date.now()
-                })
-            });
-            const json = await res.json();
-            if (json.result) {
-                treasuryWei = parseInt(json.result, 16);
-            }
-        } catch(e) {
-            console.error("Failed to fetch treasury balance:", e);
-        }
 
-        if (stats) {
-            try {
-                const s = JSON.parse(stats);
-                statQ.innerText = s.total_queries;
-                // Prefer the true EVM balance over contract's internal representation
-                const finalTreasury = treasuryWei > 0 ? treasuryWei : s.treasury_wei;
-                statT.innerText = (finalTreasury / 1e18).toFixed(2) + " GEN";
-            } catch(e){}
-        } else if (treasuryWei > 0) {
-            // Fallback if get_stats fails completely
-            statT.innerText = (treasuryWei / 1e18).toFixed(2) + " GEN";
-        }
-    }
-}
 
 // ========================
 // ACTIVITY PAGE LOGIC
