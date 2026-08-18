@@ -93,11 +93,11 @@ STEP 4 -> Apply REJECTION CRITERIA below.
 MANDATORY REJECTION RULES (set is_accurate=false if ANY apply):
 - The proposed fact describes the WRONG biological function.
 - The fact places the term in the WRONG organ system (e.g., Nervous when it should be Cardiovascular).
-- The fact contains made-up, pseudo-science, or hallucinated information NOT found in the source.
+- The fact contains made-up, pseudo-science, or hallucinated information NOT found in the source (unless the source is inaccessible, in which case use standard medical consensus).
 - The proposed fact is scientifically inaccurate based on standard human physiology.
 - The term has nothing to do with human physiology.
 
-Only set is_accurate=true if the proposed fact perfectly matches the physiological facts stated in the evidence URL.
+If the EVIDENCE WEBPAGE CONTENT is empty, shows an error, or an anti-bot challenge, YOU MUST rely on your internal expert medical knowledge to verify if the fact is scientifically accurate. Only set is_accurate=true if the proposed fact perfectly matches the physiological facts stated in the evidence URL or standard medical consensus (if evidence is blocked).
 
 Return ONLY a valid JSON object (no markdown, no extra text):
 {{

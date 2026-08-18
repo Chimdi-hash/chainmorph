@@ -76,6 +76,9 @@ async function connectWallet() {
 function disconnectWallet() {
     walletState = { address: null, isConnected: false };
     localStorage.removeItem('chainmorph_wallet_connected');
+    localStorage.removeItem('chainmorph_last_result');
+    const resultDisplay = document.getElementById('result-display');
+    if (resultDisplay) resultDisplay.classList.add('hidden');
     updateWalletUI();
     showToast('Wallet disconnected', 'info');
 }
@@ -258,23 +261,8 @@ async function initStudyPage() {
                     if (!info) {
                         showToast("Result taking longer than expected to sync to RPC. Please check your activity feed in a moment.", "warning");
                     }
-
                     if (info) {
-                        const resultDisplay = document.getElementById('result-display');
-                        resultDisplay.classList.remove('hidden');
-                        
-                        document.getElementById('res-system').innerText = sys;
-                        document.getElementById('res-term').innerText = info.term;
-                        
-                        let vizType = null;
-                        let detailedExp = null;
-
                         if (info.accepted) {
-                            document.getElementById('res-fact').innerText = info.fact;
-                            document.getElementById('res-system').style.background = "var(--primary)";
-                            document.getElementById('res-source').innerHTML = `Source verification complete.`;
-                            
-                            // Fetch cached fact to get detailed explanation and viz type
                             const cachedStr = await callContractView('get_cached_fact', [info.term_lower || term.toLowerCase()]);
                             if (cachedStr) {
                                 try {
@@ -282,36 +270,12 @@ async function initStudyPage() {
                                     if (cached.explanation) {
                                         info.image_url = cached.explanation.image_url;
                                         info.source_url = cached.explanation.source_url;
-                                        detailedExp = cached.explanation.detailed_explanation;
+                                        info.detailed_explanation = cached.explanation.detailed_explanation;
                                     }
                                 } catch(e){}
                             }
-                        } else {
-                            document.getElementById('res-fact').innerHTML = `<span style="color: #ff4d4d">REJECTED:</span> ${info.fact || fact}`;
-                            document.getElementById('res-system').style.background = "#ff4d4d";
-                            document.getElementById('res-source').innerHTML = `Validation failed.`;
                         }
-                        
-                        document.getElementById('res-detail').innerText = detailedExp || "";
-                        document.getElementById('res-reasoning').innerText = info.reasoning || "Invalid fact.";
-                        
-                        // Handle Wikipedia Image and Source
-                        const img = document.getElementById('viz-image');
-                        const label = document.getElementById('viz-label');
-                        
-                        if (img && info.accepted && info.image_url) {
-                            img.src = info.image_url;
-                            img.classList.remove('hidden');
-                            if(label) label.innerText = "Wikipedia Image";
-                        } else if (img) {
-                            img.src = "";
-                            img.classList.add('hidden');
-                            if(label) label.innerText = "";
-                        }
-
-                        if (info.accepted && info.source_url) {
-                            document.getElementById('res-source').innerHTML = `Source: <a href="${info.source_url}" target="_blank" style="color: var(--primary)">${info.source_url}</a>`;
-                        }
+                        renderResult(info, sys);
                     }
                 } else {
                     showToast(`Transaction reverted during execution.`, 'error');
@@ -322,7 +286,102 @@ async function initStudyPage() {
         });
     }
 
-    // Search logic removed as per UI update
+    // Restore last result on load
+    const saved = localStorage.getItem('chainmorph_last_result');
+    if (saved) {
+        try {
+            const { info, sys } = JSON.parse(saved);
+            renderResult(info, sys, false);
+        } catch (e) {}
+    }
+
+    // Load Stats
+    const statQ = document.getElementById('stat-queries');
+    const statT = document.getElementById('stat-treasury');
+    if (statQ && statT) {
+        const stats = await callContractView('get_stats');
+        
+        let treasuryWei = 0;
+        try {
+            const res = await fetch(GENLAYER_CONFIG.rpcUrls[0], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'eth_getBalance',
+                    params: [CONTRACT_ADDRESS, 'latest'],
+                    id: Date.now()
+                })
+            });
+            const json = await res.json();
+            if (json.result) {
+                treasuryWei = parseInt(json.result, 16);
+            }
+        } catch(e) {
+            console.error("Failed to fetch treasury balance:", e);
+        }
+
+        if (stats) {
+            try {
+                const s = JSON.parse(stats);
+                statQ.innerText = s.total_queries;
+                // Prefer the true EVM balance over contract's internal representation
+                const finalTreasury = treasuryWei > 0 ? treasuryWei : s.treasury_wei;
+                statT.innerText = (finalTreasury / 1e18).toFixed(2) + " GEN";
+            } catch(e){}
+        } else if (treasuryWei > 0) {
+            // Fallback if get_stats fails completely
+            statT.innerText = (treasuryWei / 1e18).toFixed(2) + " GEN";
+        }
+    }
+}
+
+function renderResult(info, sys, save = true) {
+    if (save) {
+        localStorage.setItem('chainmorph_last_result', JSON.stringify({info, sys}));
+    }
+
+    const resultDisplay = document.getElementById('result-display');
+    if (!resultDisplay) return;
+    
+    resultDisplay.classList.remove('hidden');
+    
+    document.getElementById('res-system').innerText = sys;
+    document.getElementById('res-term').innerText = info.term;
+    
+    let detailedExp = info.detailed_explanation || null;
+
+    if (info.accepted) {
+        document.getElementById('res-fact').innerText = info.fact;
+        document.getElementById('res-system').style.background = "var(--primary)";
+        document.getElementById('res-source').innerHTML = `Source verification complete.`;
+    } else {
+        document.getElementById('res-fact').innerHTML = `<span style="color: #ff4d4d">REJECTED:</span> ${info.fact || ""}`;
+        document.getElementById('res-system').style.background = "#ff4d4d";
+        document.getElementById('res-source').innerHTML = `Validation failed.`;
+    }
+    
+    document.getElementById('res-detail').innerText = detailedExp || "";
+    document.getElementById('res-reasoning').innerText = info.reasoning || "Invalid fact.";
+    
+    // Handle Wikipedia Image and Source
+    const img = document.getElementById('viz-image');
+    const label = document.getElementById('viz-label');
+    
+    if (img && info.accepted && info.image_url) {
+        img.src = info.image_url;
+        img.classList.remove('hidden');
+        if(label) label.innerText = "Wikipedia Image";
+    } else if (img) {
+        img.src = "";
+        img.classList.add('hidden');
+        if(label) label.innerText = "";
+    }
+
+    if (info.accepted && info.source_url) {
+        document.getElementById('res-source').innerHTML = `Source: <a href="${info.source_url}" target="_blank" style="color: var(--primary)">${info.source_url}</a>`;
+    }
+}
 
     // Load Stats
     const statQ = document.getElementById('stat-queries');
