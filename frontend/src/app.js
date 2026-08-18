@@ -157,7 +157,7 @@ async function callContractView(method, args = []) {
             account: walletState.address || '0x0000000000000000000000000000000000000001'
         });
 
-        // Wrap in a 20s timeout to prevent hanging
+        // Wrap in a 30s timeout to prevent hanging
         const result = await Promise.race([
             client.readContract({
                 address: CONTRACT_ADDRESS,
@@ -165,7 +165,7 @@ async function callContractView(method, args = []) {
                 args: args
             }),
             new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('readContract timeout')), 20000)
+                setTimeout(() => reject(new Error('readContract timeout')), 30000)
             )
         ]);
 
@@ -214,7 +214,7 @@ async function initStudyPage() {
                 
                 // Custom polling loop to avoid viem aggressive polling rate limits/CORS errors
                 let receipt = null;
-                for (let i = 0; i < 40; i++) {
+                for (let i = 0; i < 60; i++) {
                     await new Promise(r => setTimeout(r, 3000));
                     try {
                         const res = await window.ethereum.request({
@@ -230,32 +230,35 @@ async function initStudyPage() {
                     }
                 }
                 
-                if (!receipt) throw new Error("Transaction receipt polling timed out.");
+                if (!receipt) throw new Error("Transaction receipt polling timed out. The transaction might still be processing.");
                 
                 if (receipt && receipt.status !== '0x0' && receipt.status !== 0 && receipt.status !== 'REJECTED') {
-                    showToast(`Validation complete! Loading results...`, 'success');
+                    showToast(`Validation complete! Loading results from GenLayer...`, 'success');
                     proposeForm.reset();
                     
                     // Poll lightweight history until the RPC state syncs the new transaction
                     let info = null;
-                    for (let attempts = 0; attempts < 15; attempts++) {
+                    for (let attempts = 0; attempts < 30; attempts++) {
                         const historyStr = await callContractView('get_user_history', [walletState.address]);
                         if (historyStr && historyStr !== "[]") {
                             try {
                                 const history = JSON.parse(historyStr);
                                 if (history.length > 0) {
-                                    const latest = history[history.length - 1];
-                                    // Check if the latest history matches our proposed term
-                                    if ((latest.term_lower && latest.term_lower === term.toLowerCase()) || 
-                                        (latest.term && latest.term.toLowerCase() === term.toLowerCase())) {
-                                        info = latest;
-                                        break; // Found it!
+                                    // Scan backwards to find the most recent match for this term
+                                    for (let i = history.length - 1; i >= 0; i--) {
+                                        const h = history[i];
+                                        if ((h.term_lower && h.term_lower === term.toLowerCase()) || 
+                                            (h.term && h.term.toLowerCase() === term.toLowerCase())) {
+                                            info = h;
+                                            break;
+                                        }
                                     }
                                 }
                             } catch(e) { console.error(e); }
                         }
-                        // Wait 2 seconds before checking again
-                        await new Promise(r => setTimeout(r, 2000));
+                        if (info) break;
+                        // Wait 3 seconds before checking again
+                        await new Promise(r => setTimeout(r, 3000));
                     }
 
                     if (!info) {
