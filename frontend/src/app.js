@@ -280,7 +280,8 @@ async function initStudyPage() {
                                 try {
                                     const cached = JSON.parse(cachedStr);
                                     if (cached.explanation) {
-                                        vizType = cached.explanation.visualization_type;
+                                        info.image_url = cached.explanation.image_url;
+                                        info.source_url = cached.explanation.source_url;
                                         detailedExp = cached.explanation.detailed_explanation;
                                     }
                                 } catch(e){}
@@ -294,16 +295,22 @@ async function initStudyPage() {
                         document.getElementById('res-detail').innerText = detailedExp || "";
                         document.getElementById('res-reasoning').innerText = info.reasoning || "Invalid fact.";
                         
+                        // Handle Wikipedia Image and Source
                         const img = document.getElementById('viz-image');
                         const label = document.getElementById('viz-label');
-                        if (img && info.accepted && vizType) {
-                            img.src = `https://image.pollinations.ai/prompt/Scientific%20${vizType}%20of%20${encodeURIComponent(info.term)}%20human%20physiology%20detailed%20diagram%20educational?width=800&height=400&nologo=true`;
+                        
+                        if (img && info.accepted && info.image_url) {
+                            img.src = info.image_url;
                             img.classList.remove('hidden');
-                            if(label) label.innerText = vizType.replace(/_/g, ' ').toUpperCase();
+                            if(label) label.innerText = "Wikipedia Image";
                         } else if (img) {
                             img.src = "";
                             img.classList.add('hidden');
                             if(label) label.innerText = "";
+                        }
+
+                        if (info.accepted && info.source_url) {
+                            document.getElementById('res-source').innerHTML = `Source: <a href="${info.source_url}" target="_blank" style="color: var(--primary)">${info.source_url}</a>`;
                         }
                     }
                 } else {

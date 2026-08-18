@@ -106,8 +106,7 @@ Return ONLY a valid JSON object (no markdown, no extra text):
     "term": "{term_clean}",
     "system": "{physiological_system}",
     "verified_fact": "Correct fact based on evidence (if true, otherwise empty)",
-    "detailed_explanation": "A thorough, educational explanation of the term's physiological function and clinical significance (if accurate).",
-    "visualization_type": "One of: cellular_diagram, anatomical_cross_section, functional_pathway, chemical_structure"
+    "detailed_explanation": "A thorough, educational explanation of the term's physiological function and clinical significance (if accurate)."
 }}"""
 
         result_str = gl.eq_principle.prompt_non_comparative(
@@ -117,7 +116,7 @@ Return ONLY a valid JSON object (no markdown, no extra text):
                 "The response is a valid JSON containing 'is_accurate' and 'reasoning'. "
                 "CRITICAL: 'is_accurate' MUST be false if the fact contradicts the evidence or standard physiology, "
                 "or if it describes the wrong system. 'is_accurate' is only true if it perfectly matches the source. "
-                "Include a detailed educational explanation if accurate, and classify the best visualization type."
+                "Include a detailed educational explanation if accurate."
             ),
         )
 
@@ -134,6 +133,28 @@ Return ONLY a valid JSON object (no markdown, no extra text):
         except Exception:
             data = {}
 
+        # Non-deterministic Wikipedia image fetch
+        def fetch_wiki_image() -> str:
+            term_encoded = term_clean.replace(" ", "%20")
+            wiki_api_url = f"https://en.wikipedia.org/w/api.php?action=query&titles={term_encoded}&prop=pageimages&format=json&pithumbsize=800"
+            try:
+                # Use render to bypass bot protections
+                wiki_res = gl.nondet.web.render(wiki_api_url, mode='text')
+                wiki_data = json.loads(wiki_res)
+                pages = wiki_data.get("query", {}).get("pages", {})
+                for page_id, page_info in pages.items():
+                    if "thumbnail" in page_info:
+                        return page_info["thumbnail"]["source"]
+            except Exception:
+                pass
+            return ""
+
+        wiki_image_url = gl.eq_principle.prompt_non_comparative(
+            fetch_wiki_image,
+            task="Fetch Wikipedia image URL for the term",
+            criteria="Return the Wikipedia image URL string, or empty string if not found. Do not include any other text."
+        ).strip()
+
         is_accurate = bool(data.get("is_accurate", False))
         caller_str = self._addr(caller)
         stake_int = int(stake)
@@ -143,7 +164,8 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             "system": data.get("system", physiological_system),
             "verified_fact": data.get("verified_fact", proposed_fact),
             "detailed_explanation": data.get("detailed_explanation", ""),
-            "visualization_type": data.get("visualization_type", "anatomical_cross_section"),
+            "image_url": wiki_image_url,
+            "source_url": evidence_url,
             "reasoning": data.get("reasoning", "")
         }
 
@@ -154,7 +176,8 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             "fact": proposed_fact,
             "verified_fact": safe_exp["verified_fact"],
             "detailed_explanation": safe_exp["detailed_explanation"],
-            "visualization_type": safe_exp["visualization_type"],
+            "image_url": safe_exp["image_url"],
+            "source_url": safe_exp["source_url"],
             "reasoning": safe_exp["reasoning"],
             "accepted": is_accurate
         })
