@@ -11,7 +11,7 @@ const GENLAYER_CONFIG = {
 };
 
 // IMPORTANT: Replace with actual deployed contract address on GenLayer Studio
-const CONTRACT_ADDRESS = '0xe569Fd365e3DF088A7Fd135d04eFF493ce0d4495';
+const CONTRACT_ADDRESS = '0x92E1B8be0B6b83e00F606c852De59a3045f33ff2';
 
 let walletState = {
     address: null,
