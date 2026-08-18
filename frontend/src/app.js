@@ -141,26 +141,34 @@ async function restoreSession() {
     }
 }
 
-// ========================
-// RPC CALLS (GENLAYER)
-// ========================
 async function callContractView(method, args = []) {
     try {
-        
-        const readClient = createClient({
-            chain: studionet,
-            account: walletState.address || "0x0000000000000000000000000000000000000000"
+        // Create a fresh client with the studio endpoint explicitly set
+        const client = createClient({
+            chain: {
+                ...studionet,
+                rpcUrls: {
+                    default: { http: ['https://studio.genlayer.com/api'] }
+                }
+            },
+            account: walletState.address || '0x0000000000000000000000000000000000000001'
         });
 
-        const result = await readClient.readContract({
-            address: CONTRACT_ADDRESS,
-            functionName: method,
-            args: args
-        });
-        
+        // Wrap in a 20s timeout to prevent hanging
+        const result = await Promise.race([
+            client.readContract({
+                address: CONTRACT_ADDRESS,
+                functionName: method,
+                args: args
+            }),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('readContract timeout')), 20000)
+            )
+        ]);
+
         return result;
     } catch(e) {
-        console.error("RPC View error", e);
+        console.error('RPC View error:', method, e.message);
         return null;
     }
 }
