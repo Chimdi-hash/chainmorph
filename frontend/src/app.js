@@ -266,7 +266,16 @@ async function initStudyPage() {
                     }
                     if (info) {
                         if (info.accepted) {
-                            const cachedStr = await callContractView('get_cached_fact', [info.term_lower || term.toLowerCase()]);
+                            let cachedStr = null;
+                            // Retry loop for cache due to eventual consistency across GenLayer RPC nodes
+                            for (let c = 0; c < 10; c++) {
+                                cachedStr = await callContractView('get_cached_fact', [info.term_lower || term.toLowerCase()]);
+                                if (cachedStr && !cachedStr.includes('"found": false') && !cachedStr.includes('"found":False')) {
+                                    break;
+                                }
+                                await new Promise(r => setTimeout(r, 2000));
+                            }
+                            
                             if (cachedStr) {
                                 try {
                                     const cached = JSON.parse(cachedStr);
