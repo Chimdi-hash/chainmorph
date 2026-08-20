@@ -16,11 +16,10 @@ def test_chainmorph_direct_payout(direct_deploy, direct_vm, direct_alice, direct
     # Deploy the chainmorph contract
     contract = direct_deploy("contracts/chainmorph_contract.py")
     
-    # 1. Fund the contract natively to ensure fully collateralized rewards
-    # We do this from Bob's account. He deposits 5 GEN.
+    # 1. Fund the contract natively using receive()
     with direct_vm.prank(direct_bob):
         direct_vm.value = 5 * 10**18
-        contract.fund_treasury()
+        contract.receive()
     
     # 2. Mock web and LLM to force acceptance
     evidence_url = "https://medical-dictionary.com/heart"
@@ -36,21 +35,20 @@ def test_chainmorph_direct_payout(direct_deploy, direct_vm, direct_alice, direct
         "visualization_type": "anatomical_cross_section"
     })
     
-    # Mock prompt_non_comparative directly
     import genlayer.gl as gl
     original_prompt = getattr(gl.eq_principle, 'prompt_non_comparative', None)
-    gl.eq_principle.prompt_non_comparative = lambda prompt, task, criteria: acceptance_json
     
     try:
-        # 3. Alice proposes term with 1 GEN stake
+        # --- TEST 1: Oversized Stake ---
+        # User stakes 3 GEN (oversized), but the payout should still only be 2 GEN total (1 GEN returned + 1 GEN reward)
+        gl.eq_principle.prompt_non_comparative = lambda prompt, task, criteria: acceptance_json
+        
         with direct_vm.prank(direct_alice):
-            direct_vm.value = 1 * 10**18
+            direct_vm.value = 3 * 10**18
             contract.propose_fact("heart", "Cardiovascular", "The heart is a muscular organ that pumps blood.", evidence_url)
         
-        # 4. Verify native balance increased by exactly the promised amount (2 GEN)
-        # Using trace check since direct_vm doesn't natively apply EthSend to _balances in this test loader version
         found_transfer = False
-        target_amount = 2 * 10**18
+        target_amount = 2 * 10**18 # payout capped to 2 GEN
         
         for trace in direct_vm._traces:
             trace_str = str(trace)
@@ -58,7 +56,29 @@ def test_chainmorph_direct_payout(direct_deploy, direct_vm, direct_alice, direct
                 found_transfer = True
                 break
                 
-        assert found_transfer, "Claimant's native balance did not increase by full promised amount (2 GEN EthSend trace missing)."
+        assert found_transfer, "Payout wasn't capped to exactly 2 GEN for oversized stake"
+
+        # --- TEST 2: Malformed Verdict ---
+        # Reset and use a new term
+        direct_vm._traces = []
+        malformed_json = "This is not json { garbage... is_accurate: 'maybe' ]"
+        gl.eq_principle.prompt_non_comparative = lambda prompt, task, criteria: malformed_json
+        
+        with direct_vm.prank(direct_alice):
+            direct_vm.value = 1 * 10**18
+            # Malformed verdict should "fail closed" resulting in a burn of 1 GEN
+            contract.propose_fact("lung", "Respiratory", "Lungs breathe.", evidence_url)
+            
+        found_burn = False
+        burn_amount = 1 * 10**18
+        
+        for trace in direct_vm._traces:
+            trace_str = str(trace)
+            if "EthSend" in trace_str and str(burn_amount) in trace_str and "0x0000000000000000000000000000000000000000" in trace_str:
+                found_burn = True
+                break
+                
+        assert found_burn, "Malformed verdict didn't safely fail closed and burn exactly 1 GEN"
         
     finally:
         if original_prompt:
