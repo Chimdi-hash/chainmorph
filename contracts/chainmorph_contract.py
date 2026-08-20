@@ -64,7 +64,11 @@ class ChainMorphDictionary(gl.Contract):
         except AttributeError:
             current_balance = 9999999999999999999999
             
-        reward_wei = int(stake) * 2
+        # Cap payouts and burned stake to the advertised fixed stake (1 GEN).
+        # Any excess GEN sent is kept by the treasury.
+        effective_stake = ONE_GEN
+        reward_wei = effective_stake * 2
+        
         if current_balance < reward_wei:
             raise Exception("Contract treasury is low. Cannot guarantee reward right now.")
 
@@ -92,14 +96,12 @@ STEP 4 -> Apply REJECTION CRITERIA below.
 
 MANDATORY REJECTION RULES (set is_accurate=false if ANY apply):
 - The proposed fact describes the WRONG biological function.
-- The fact places the term in the WRONG organ system (e.g., Nervous when it should be Cardiovascular).
-- The fact contains made-up, pseudo-science, or hallucinated information NOT found in the source (unless the source is inaccessible, in which case use standard medical consensus).
+- The fact places the term in the WRONG organ system.
+- The fact contains made-up, pseudo-science, or hallucinated information NOT found in the source.
 - The proposed fact is scientifically inaccurate based on standard human physiology.
-- The term has nothing to do with human physiology.
+- The EVIDENCE WEBPAGE CONTENT is empty, shows an error (like 404 Not Found), or is an anti-bot challenge (like Cloudflare). If evidence is unavailable or invalid, you MUST FAIL CLOSED and set is_accurate=false.
 
-If the EVIDENCE WEBPAGE CONTENT is empty, shows an error, or an anti-bot challenge, YOU MUST rely on your internal expert medical knowledge to verify if the fact is scientifically accurate. Only set is_accurate=true if the proposed fact perfectly matches the physiological facts stated in the evidence URL or standard medical consensus (if evidence is blocked).
-
-Return ONLY a valid JSON object (no markdown, no extra text):
+Return ONLY a valid JSON object (no markdown, no extra text). Ensure 'is_accurate' is a real JSON boolean (true/false), NOT a string:
 {{
     "is_accurate": false,
     "reasoning": "Explain why it matches or fails against the evidence.",
@@ -114,13 +116,13 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             task="Verify the proposed human physiology fact using the evidence URL.",
             criteria=(
                 "The response is a valid JSON containing 'is_accurate' and 'reasoning'. "
-                "CRITICAL: 'is_accurate' MUST be false if the fact contradicts the evidence or standard physiology, "
-                "or if it describes the wrong system. 'is_accurate' is only true if it perfectly matches the source. "
-                "Include a detailed educational explanation if accurate."
+                "'is_accurate' MUST be a strict boolean. "
+                "CRITICAL: 'is_accurate' MUST be false if the evidence is missing, invalid, or anti-bot blocked. "
+                "It MUST be false if the fact contradicts the evidence or describes the wrong system."
             ),
         )
 
-        # Parse AI output
+        # Parse AI output handling malformed verdicts
         try:
             cleaned = result_str.strip()
             if "```" in cleaned:
@@ -132,6 +134,10 @@ Return ONLY a valid JSON object (no markdown, no extra text):
                 data = {}
         except Exception:
             data = {}
+            
+        # Enforce a real JSON boolean (fail closed if it's garbage or missing)
+        raw_acc = data.get("is_accurate", False)
+        is_accurate = True if raw_acc is True or str(raw_acc).strip().lower() == "true" else False
 
         # Non-deterministic Wikipedia image fetch
         def fetch_wiki_image() -> str:
@@ -155,9 +161,8 @@ Return ONLY a valid JSON object (no markdown, no extra text):
             criteria="Return the Wikipedia image URL string, or empty string if not found. Do not include any other text."
         ).strip()
 
-        is_accurate = bool(data.get("is_accurate", False))
         caller_str = self._addr(caller)
-        stake_int = int(stake)
+        stake_int = effective_stake
 
         safe_exp = {
             "term": data.get("term", term_clean),
