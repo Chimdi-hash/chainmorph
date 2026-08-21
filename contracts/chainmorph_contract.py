@@ -137,7 +137,7 @@ Return ONLY a valid JSON object (no markdown, no extra text). Ensure 'is_accurat
             
         # Enforce a real JSON boolean (fail closed if it's garbage or missing)
         raw_acc = data.get("is_accurate", False)
-        is_accurate = True if raw_acc is True or str(raw_acc).strip().lower() == "true" else False
+        is_accurate = (raw_acc is True)
 
         # Non-deterministic Wikipedia image fetch
         def fetch_wiki_image() -> str:
