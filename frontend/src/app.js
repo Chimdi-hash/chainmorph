@@ -106,15 +106,24 @@ async function updateWalletUI() {
         if(walletInfo) walletInfo.classList.remove('hidden');
         if(addressBadge) addressBadge.innerText = shortenAddress(walletState.address);
         
-        // Fetch Balance
+        // Fetch Balance directly from RPC to bypass MetaMask desyncs
         try {
-            const balHex = await window.ethereum.request({
-                method: 'eth_getBalance',
-                params: [walletState.address, 'latest']
+            const res = await fetch(GENLAYER_CONFIG.rpcUrls[0], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'eth_getBalance',
+                    params: [walletState.address, 'latest'],
+                    id: Date.now()
+                })
             });
-            const balWei = BigInt(balHex);
-            const balEth = (Number(balWei) / 1e18).toFixed(4);
-            if(balanceBadge) balanceBadge.innerText = `${balEth} GEN`;
+            const data = await res.json();
+            if (data && data.result) {
+                const balWei = BigInt(data.result);
+                const balEth = (Number(balWei) / 1e18).toFixed(4);
+                if(balanceBadge) balanceBadge.innerText = `${balEth} GEN`;
+            }
         } catch (e) {
             console.error("Balance fetch error", e);
         }
