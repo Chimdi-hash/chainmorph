@@ -75,23 +75,18 @@ function disconnectWallet() {
 
 async function switchToGenLayer() {
     try {
+        const addChainParams = {
+            chainId: GENLAYER_CONFIG.chainId,
+            chainName: GENLAYER_CONFIG.chainName,
+            rpcUrls: GENLAYER_CONFIG.rpcUrls,
+            nativeCurrency: GENLAYER_CONFIG.nativeCurrency
+        };
         await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: GENLAYER_CONFIG.chainId }]
+            method: 'wallet_addEthereumChain',
+            params: [addChainParams]
         });
     } catch (err) {
-        if (err.code === 4902) {
-            const addChainParams = {
-                chainId: GENLAYER_CONFIG.chainId,
-                chainName: GENLAYER_CONFIG.chainName,
-                rpcUrls: GENLAYER_CONFIG.rpcUrls,
-                nativeCurrency: GENLAYER_CONFIG.nativeCurrency
-            };
-            await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [addChainParams]
-            });
-        }
+        console.error("Failed to switch/add GenLayer network:", err);
     }
 }
 
@@ -153,17 +148,18 @@ async function initWallet() {
         });
         window.ethereum.on('chainChanged', () => window.location.reload());
 
-        // Auto-connect if already authorized in MetaMask
-        try {
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts && accounts.length > 0) {
-                walletState.address = accounts[0];
-                walletState.isConnected = true;
-                localStorage.setItem('chainmorph_wallet_connected', 'true');
-                updateWalletUI();
+        // Auto-connect ONLY if they previously connected (prevents page-load popups)
+        if (localStorage.getItem('chainmorph_wallet_connected') === 'true') {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts && accounts.length > 0) {
+                    walletState.address = accounts[0];
+                    walletState.isConnected = true;
+                    updateWalletUI();
+                }
+            } catch (e) {
+                console.error("Failed to query authorized accounts:", e);
             }
-        } catch (e) {
-            console.error("Failed to query authorized accounts:", e);
         }
     }
 }
