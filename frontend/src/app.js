@@ -48,8 +48,8 @@ async function connectWallet() {
     }
 
     try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         await switchToGenLayer();
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         
         walletState.address = accounts[0];
         walletState.isConnected = true;
@@ -57,16 +57,6 @@ async function connectWallet() {
         
         updateWalletUI();
         showToast(`Connected: ${shortenAddress(walletState.address)}`, 'success');
-        
-        // Listeners
-        window.ethereum.on('accountsChanged', (accs) => {
-            if (accs.length === 0) disconnectWallet();
-            else {
-                walletState.address = accs[0];
-                updateWalletUI();
-            }
-        });
-        window.ethereum.on('chainChanged', () => window.location.reload());
     } catch (err) {
         if (err.code === 4001) showToast('Connection rejected.', 'warning');
         else showToast(`Error: ${err.message}`, 'error');
@@ -139,13 +129,32 @@ function shortenAddress(addr) {
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
 }
 
-async function restoreSession() {
-    if (window.ethereum && localStorage.getItem('chainmorph_wallet_connected') === 'true') {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-            walletState.address = accounts[0];
-            walletState.isConnected = true;
-            updateWalletUI();
+async function initWallet() {
+    if (window.ethereum) {
+        // Setup listeners globally once on page load
+        window.ethereum.on('accountsChanged', (accs) => {
+            if (accs.length === 0) {
+                disconnectWallet();
+            } else {
+                walletState.address = accs[0];
+                walletState.isConnected = true;
+                localStorage.setItem('chainmorph_wallet_connected', 'true');
+                updateWalletUI();
+            }
+        });
+        window.ethereum.on('chainChanged', () => window.location.reload());
+
+        // Auto-connect if already authorized in MetaMask
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts && accounts.length > 0) {
+                walletState.address = accounts[0];
+                walletState.isConnected = true;
+                localStorage.setItem('chainmorph_wallet_connected', 'true');
+                updateWalletUI();
+            }
+        } catch (e) {
+            console.error("Failed to query authorized accounts:", e);
         }
     }
 }
@@ -524,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
-    await restoreSession();
+    await initWallet();
     
     const path = window.location.pathname;
     if (path.includes('study.html')) {
