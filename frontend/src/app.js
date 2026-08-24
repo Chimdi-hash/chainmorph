@@ -3,7 +3,7 @@ import { studionet } from 'genlayer-js/chains';
 
 // ChainMorph Configuration
 const GENLAYER_CONFIG = {
-    chainId: '0xF22F',        // 61999
+    chainId: '0xf22f',        // 61999
     chainIdDec: 61999,
     chainName: 'GenLayer Studio',
     rpcUrls: ['https://studio.genlayer.com/api'],
@@ -48,8 +48,8 @@ async function connectWallet() {
     }
 
     try {
-        await switchToGenLayer();
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        await switchToGenLayer();
         
         walletState.address = accounts[0];
         walletState.isConnected = true;
