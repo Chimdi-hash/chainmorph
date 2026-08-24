@@ -91,9 +91,15 @@ async function switchToGenLayer() {
         });
     } catch (err) {
         if (err.code === 4902) {
+            const addChainParams = {
+                chainId: GENLAYER_CONFIG.chainId,
+                chainName: GENLAYER_CONFIG.chainName,
+                rpcUrls: GENLAYER_CONFIG.rpcUrls,
+                nativeCurrency: GENLAYER_CONFIG.nativeCurrency
+            };
             await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
-                params: [GENLAYER_CONFIG]
+                params: [addChainParams]
             });
         }
     }
