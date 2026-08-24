@@ -75,18 +75,26 @@ function disconnectWallet() {
 
 async function switchToGenLayer() {
     try {
-        const addChainParams = {
-            chainId: GENLAYER_CONFIG.chainId,
-            chainName: GENLAYER_CONFIG.chainName,
-            rpcUrls: GENLAYER_CONFIG.rpcUrls,
-            nativeCurrency: GENLAYER_CONFIG.nativeCurrency
-        };
         await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [addChainParams]
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: GENLAYER_CONFIG.chainId }]
         });
     } catch (err) {
-        console.error("Failed to switch/add GenLayer network:", err);
+        // If network is not added yet, add it
+        if (err.code === 4902) {
+            const addChainParams = {
+                chainId: GENLAYER_CONFIG.chainId,
+                chainName: GENLAYER_CONFIG.chainName,
+                rpcUrls: GENLAYER_CONFIG.rpcUrls,
+                nativeCurrency: GENLAYER_CONFIG.nativeCurrency
+            };
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [addChainParams]
+            });
+        } else {
+            console.error("Failed to switch/add GenLayer network:", err);
+        }
     }
 }
 
