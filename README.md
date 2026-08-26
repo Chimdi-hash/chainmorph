@@ -1,5 +1,7 @@
 # ChainMorph 🧬
 
+> **📜 Deployed Contract Address:** `0x619A08ee3dE3B338Da70A2E7864E67353Af3B448`
+
 ChainMorph is a decentralized, AI-powered physiological fact-checking and educational platform built on the **GenLayer Protocol**. It leverages Intelligent Contracts (GenVM), Large Language Models (LLMs), and Optimistic Democracy to crowdsource, verify, and reward accurate biological knowledge.
 
 Users can stake **1 GEN** token to propose a physiological fact along with an evidence URL (e.g., Wikipedia). GenLayer's decentralized AI validator nodes read the source, cross-reference it with standard medical consensus, and vote on its accuracy. 
