@@ -35,6 +35,41 @@ class ChainMorphDictionary(gl.Contract):
             return address.as_hex.lower()
         return str(address).lower()
 
+    def _get_hostname(self, url: str) -> str:
+        temp = url.strip().lower()
+        if temp.startswith("https://"):
+            temp = temp[8:]
+        elif temp.startswith("http://"):
+            temp = temp[7:]
+        # Split path segments
+        parts = temp.split("/")
+        authority = parts[0]
+        # Remove credentials if any
+        if "@" in authority:
+            authority = authority.split("@")[-1]
+        # Remove port if any
+        if ":" in authority:
+            authority = authority.split(":")[0]
+        return authority
+
+    def _is_authoritative(self, url: str) -> bool:
+        hostname = self._get_hostname(url)
+        trusted_domains = [
+            "wikipedia.org",
+            "nih.gov",
+            "cdc.gov",
+            "who.int",
+            "mayoclinic.org",
+            "medlineplus.gov",
+            "britannica.com",
+            "nature.com",
+            "science.org"
+        ]
+        for domain in trusted_domains:
+            if hostname == domain or hostname.endswith(f".{domain}"):
+                return True
+        return False
+
     @gl.public.write
     def receive(self):
         # Native fallback to accept GEN funding directly
@@ -54,6 +89,9 @@ class ChainMorphDictionary(gl.Contract):
 
         if not term_lower:
             raise Exception("Term cannot be empty.")
+
+        if not self._is_authoritative(evidence_url):
+            raise Exception("Evidence URL must be from an authoritative medical or scientific source (e.g., Wikipedia, NIH, CDC, WHO, Mayo Clinic).")
 
         if term_lower in self.all_facts_cache:
             raise Exception(f"'{term_clean}' is already in the ChainMorph dictionary.")
@@ -210,6 +248,178 @@ Return ONLY a valid JSON object (no markdown, no extra text). Ensure 'is_accurat
         self.total_queries += 1
         
         # Return the adjudication result live without storing it in temporary memory
+        return validation_result
+
+    @gl.public.write.payable
+    def challenge_fact(self, term: str, physiological_system: str, proposed_fact: str, evidence_url: str) -> str:
+        caller = gl.message.sender_address
+        stake = gl.message.value
+        ONE_GEN = 1000000000000000000
+
+        if stake < ONE_GEN:
+            raise Exception("Must stake at least 1 GEN to challenge a fact.")
+
+        term_clean = term.strip()
+        term_lower = term_clean.lower()
+
+        if term_lower not in self.all_facts_cache:
+            raise Exception(f"'{term_clean}' is not in the dictionary. Propose it first instead of challenging.")
+
+        if not self._is_authoritative(evidence_url):
+            raise Exception("Evidence URL must be from an authoritative medical or scientific source (e.g., Wikipedia, NIH, CDC, WHO, Mayo Clinic).")
+
+        # Get existing fact data
+        existing_data_str = self.all_facts_cache[term_lower]
+        existing_data = json.loads(existing_data_str)
+        existing_fact = existing_data.get("explanation", {}).get("verified_fact", "")
+
+        # Check if contract has enough uncommitted funds to back the 2x reward natively
+        try:
+            current_balance = gl.get_self_balance()
+        except AttributeError:
+            current_balance = 9999999999999999999999
+            
+        effective_stake = ONE_GEN
+        reward_wei = effective_stake * 2
+        
+        if current_balance < reward_wei:
+            raise Exception("Contract treasury is low. Cannot guarantee reward right now.")
+
+        # AI Validation Process for Challenge
+        def build_challenge_prompt() -> str:
+            # Render evidence URL
+            web_data = gl.nondet.web.render(evidence_url, mode='text')
+            
+            return f"""You are a STRICT medical and physiological validator for ChainMorph.
+We have an existing fact in our dictionary, but a challenger has submitted a correction/improvement.
+Your job is to determine if the challenger's new proposed fact is scientifically accurate AND represents an improvement or correction over the existing fact, based on the provided evidence.
+
+Term: "{term_clean}"
+System: "{physiological_system}"
+
+[EXISTING FACT]
+"{existing_fact}"
+
+[CHALLENGER'S PROPOSED CORRECTION]
+"{proposed_fact}"
+
+[CHALLENGER'S EVIDENCE URL]
+"{evidence_url}"
+
+--- EVIDENCE WEBPAGE CONTENT ---
+{web_data}
+--------------------------------
+
+MANDATORY RULES (set is_accurate=false if ANY apply):
+- The challenger's proposed correction is scientifically inaccurate based on human physiology.
+- The new fact describes the WRONG biological function.
+- The new fact places the term in the WRONG organ system.
+- The EVIDENCE WEBPAGE CONTENT is empty, invalid, or blocked (shows Cloudflare or error). If evidence is unavailable/invalid, you MUST set is_accurate=false.
+- The proposed correction does NOT actually correct, improve, or represent a better definition than the existing fact.
+
+Return ONLY a valid JSON object (no markdown, no extra text). Ensure 'is_accurate' is a real JSON boolean (true/false), NOT a string:
+{{
+    "is_accurate": false,
+    "reasoning": "Explain why the challenge represents a valid correction or why it fails.",
+    "term": "{term_clean}",
+    "system": "{physiological_system}",
+    "verified_fact": "Corrected fact based on evidence (if accepted, otherwise empty)",
+    "detailed_explanation": "A thorough, updated educational explanation of the term's physiological function and clinical significance (if accepted)."
+}}"""
+
+        result_str = gl.eq_principle.prompt_non_comparative(
+            build_challenge_prompt,
+            task="Verify if the physiological challenge represents a valid correction or improvement.",
+            criteria=(
+                "The response is a valid JSON containing 'is_accurate' and 'reasoning'. "
+                "'is_accurate' MUST be a strict boolean. "
+                "CRITICAL: 'is_accurate' MUST be false if the evidence is missing, invalid, or if the challenge does not correct/improve the existing fact."
+            ),
+        )
+
+        # Parse AI output handling malformed verdicts
+        try:
+            cleaned = result_str.strip()
+            if "```" in cleaned:
+                s = cleaned.find("{"); e = cleaned.rfind("}") + 1
+                if s >= 0 and e > s:
+                    cleaned = cleaned[s:e]
+            data = json.loads(cleaned)
+            if not isinstance(data, dict):
+                data = {}
+        except Exception:
+            data = {}
+            
+        raw_acc = data.get("is_accurate", False)
+        is_accurate = (raw_acc is True)
+
+        # Non-deterministic Wikipedia image fetch
+        def fetch_wiki_image() -> str:
+            term_encoded = term_clean.replace(" ", "%20")
+            wiki_api_url = f"https://en.wikipedia.org/w/api.php?action=query&titles={term_encoded}&prop=pageimages&format=json&pithumbsize=800"
+            try:
+                wiki_res = gl.nondet.web.render(wiki_api_url, mode='text')
+                wiki_data = json.loads(wiki_res)
+                pages = wiki_data.get("query", {}).get("pages", {})
+                for page_id, page_info in pages.items():
+                    if "thumbnail" in page_info:
+                        return page_info["thumbnail"]["source"]
+            except Exception:
+                pass
+            return ""
+
+        wiki_image_url = gl.eq_principle.prompt_non_comparative(
+            fetch_wiki_image,
+            task="Fetch Wikipedia image URL for the term",
+            criteria="Return the Wikipedia image URL string, or empty string if not found. Do not include any other text."
+        ).strip()
+
+        caller_str = self._addr(caller)
+        stake_int = effective_stake
+
+        safe_exp = {
+            "term": data.get("term", term_clean),
+            "system": data.get("system", physiological_system),
+            "verified_fact": data.get("verified_fact", proposed_fact),
+            "detailed_explanation": data.get("detailed_explanation", ""),
+            "image_url": wiki_image_url,
+            "source_url": evidence_url,
+            "reasoning": data.get("reasoning", "")
+        }
+
+        validation_result = json.dumps({
+            "term": safe_exp["term"],
+            "system": safe_exp["system"],
+            "fact": proposed_fact,
+            "verified_fact": safe_exp["verified_fact"],
+            "detailed_explanation": safe_exp["detailed_explanation"],
+            "image_url": safe_exp["image_url"],
+            "source_url": safe_exp["source_url"],
+            "reasoning": safe_exp["reasoning"],
+            "accepted": is_accurate
+        })
+
+        if is_accurate:
+            # ACCEPTED: Direct Native Transfer of 2x Stake (Reward)
+            _Recipient(caller).emit_transfer(value=u256(reward_wei), on='finalized')
+            
+            # Cache result
+            self.all_facts_cache[term_lower] = json.dumps({
+                "explanation": safe_exp,
+                "validator_consensus": True,
+                "proposer": caller_str
+            })
+            
+            self._record(caller_str, term_lower, term_clean, safe_exp.get("verified_fact", ""), safe_exp.get("reasoning", ""), True, stake_int)
+        else:
+            # REJECTED: Real Burning of the Stake
+            null_address = Address("0x0000000000000000000000000000000000000000")
+            _Recipient(null_address).emit_transfer(value=u256(stake_int), on='finalized')
+            
+            self._record(caller_str, term_lower, term_clean, proposed_fact, data.get("reasoning", "Invalid challenge."), False, stake_int)
+
+        self.total_queries += 1
+        
         return validation_result
 
     def _record(self, caller_str: str, term_lower: str, term_display: str, fact: str, reasoning: str, accepted: bool, stake_int: int):

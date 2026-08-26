@@ -210,10 +210,87 @@ async function callContractView(method, args = []) {
 async function initStudyPage() {
     const proposeForm = document.getElementById('propose-form');
     if (proposeForm) {
+        const termInput = document.getElementById('prop-term');
+        const statusMsg = document.getElementById('term-status-message');
+        const submitBtn = document.getElementById('submit-fact-btn');
+        const urlInput = document.getElementById('prop-url');
+        
+        let checkTimeout = null;
+        let isChallengeMode = false;
+        
+        const checkAuthoritative = () => {
+            const url = urlInput.value.trim().toLowerCase();
+            if (!url) return;
+            
+            const trusted = ["wikipedia.org", "nih.gov", "cdc.gov", "who.int", "mayoclinic.org", "medlineplus.gov", "britannica.com", "nature.com", "science.org"];
+            let hostname = url;
+            if (hostname.startsWith("https://")) hostname = hostname.slice(8);
+            else if (hostname.startsWith("http://")) hostname = hostname.slice(7);
+            hostname = hostname.split('/')[0].split('@').pop().split(':')[0];
+            
+            const isOk = trusted.some(d => hostname === d || hostname.endsWith("." + d));
+            if (!isOk) {
+                urlInput.setCustomValidity("Evidence URL must be from an authoritative source (e.g., Wikipedia, NIH, WHO, Mayo Clinic).");
+            } else {
+                urlInput.setCustomValidity("");
+            }
+        };
+        urlInput?.addEventListener('input', checkAuthoritative);
+        urlInput?.addEventListener('change', checkAuthoritative);
+        
+        const checkTerm = async () => {
+            const term = termInput.value.trim();
+            if (!term) {
+                if(statusMsg) statusMsg.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const res = await callContractView('get_cached_fact', [term]);
+                if (res) {
+                    const data = JSON.parse(res);
+                    if (data && data.found !== false) {
+                        isChallengeMode = true;
+                        if(statusMsg) {
+                            statusMsg.innerHTML = "⚠️ <strong>Challenge Mode:</strong> This term already exists. Submitting will challenge the entry and propose a correction.";
+                            statusMsg.style.backgroundColor = "rgba(224, 86, 36, 0.15)";
+                            statusMsg.style.border = "1px solid rgba(224, 86, 36, 0.3)";
+                            statusMsg.style.color = "#ff8c69";
+                            statusMsg.classList.remove('hidden');
+                        }
+                        if(submitBtn) submitBtn.innerText = "Challenge Fact (Stake 1 GEN)";
+                    } else {
+                        isChallengeMode = false;
+                        if(statusMsg) {
+                            statusMsg.innerHTML = "✨ <strong>New Proposal:</strong> This term is not in the dictionary yet.";
+                            statusMsg.style.backgroundColor = "rgba(40, 167, 69, 0.15)";
+                            statusMsg.style.border = "1px solid rgba(40, 167, 69, 0.3)";
+                            statusMsg.style.color = "#77dd77";
+                            statusMsg.classList.remove('hidden');
+                        }
+                        if(submitBtn) submitBtn.innerText = "Propose Fact (Stake 1 GEN)";
+                    }
+                }
+            } catch(e) {
+                console.error("Error checking term", e);
+            }
+        };
+        
+        termInput?.addEventListener('input', () => {
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkTerm, 600);
+        });
+
         proposeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!walletState.isConnected) {
                 showToast('Connect wallet first to propose facts.', 'error');
+                return;
+            }
+            
+            checkAuthoritative();
+            if (!proposeForm.checkValidity()) {
+                proposeForm.reportValidity();
                 return;
             }
             
@@ -231,9 +308,11 @@ async function initStudyPage() {
                     provider: window.ethereum,
                 });
 
+                const funcName = isChallengeMode ? 'challenge_fact' : 'propose_fact';
+
                 const txHash = await writeClient.writeContract({
                     address: CONTRACT_ADDRESS,
-                    functionName: 'propose_fact',
+                    functionName: funcName,
                     args: [term, sys, fact, url],
                     value: 1000000000000000000n, // 1 GEN (BigInt)
                 });
